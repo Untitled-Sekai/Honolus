@@ -1,6 +1,4 @@
-import { webcrypto } from 'node:crypto';
 import type { Context } from 'hono';
-import { sonolusMiddleware } from '../middleware';
 import { SonolusContext } from '../context';
 import {
     getSignaturePublicKey,
@@ -17,6 +15,7 @@ export async function authenticate(c: Context): Promise<boolean> {
      * @returns 認証結果 boolean / Authentication result boolean
      */
     c.sonolus = new SonolusContext(c); 
+    const { subtle } = globalThis.crypto;
     const session = c.sonolus.session;
     const signature = c.sonolus.signature;
 
@@ -31,7 +30,7 @@ export async function authenticate(c: Context): Promise<boolean> {
 
     // TODO: 他の検証は後ほど実装
 
-    const result = await webcrypto.subtle.verify(
+    const result = await subtle.verify(
         { name: 'ECDSA', hash: 'SHA-256' },
         signaturePublicKey,
         Buffer.from(signature, 'base64'),
