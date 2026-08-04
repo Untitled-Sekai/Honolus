@@ -6,8 +6,9 @@
     "lib": ["ES2022"],
     "strict": true,
     "skipLibCheck": true,
-    "experimentalDecorators": true,  /* デコレーターを使うために必須 */
-    "emitDecoratorMetadata": true,   /* メタデータが必要な場合用 */
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "types": ["node"],
     "outDir": "./dist",
     "rootDir": "./src"
   },
