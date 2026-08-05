@@ -2,6 +2,7 @@ import type { Context } from 'hono';
 import { SonolusContext } from '../context';
 import {
     getSignaturePublicKey,
+    ServerAuthenticateResponse
 } from '@sonolus/core'
 import { authenticateSchema } from '../type';
 
@@ -20,7 +21,7 @@ export async function authenticate(c: Context): Promise<boolean> {
     const signature = c.sonolus.signature;
 
     if (!session || !signature) {
-        c.sonolus.error(401, 'Missing session or signature');
+        c.sonolus.error(400, 'Missing session or signature');
         return false;
     }
 
@@ -30,6 +31,11 @@ export async function authenticate(c: Context): Promise<boolean> {
 
     // TODO: 他の検証は後ほど実装
 
+    if (body.time + 60 * 1000 < Date.now()) {
+        c.sonolus.error(400, 'Request expired');
+        return false;
+    }
+
     const result = await subtle.verify(
         { name: 'ECDSA', hash: 'SHA-256' },
         signaturePublicKey,
@@ -37,7 +43,7 @@ export async function authenticate(c: Context): Promise<boolean> {
         Buffer.from(JSON.stringify(body))
     )
     if (!result) {
-        c.sonolus.error(401, 'Invalid signature');
+        c.sonolus.error(400, 'Invalid signature');
         return false;
     }
 

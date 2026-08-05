@@ -4,7 +4,9 @@
  */
 
 import { Hono } from 'hono';
-import { route_item } from '../type';
+import { authenticate } from './authenticate';
+import { ItemKey, route_item } from '../type';
+import { isValidItemType } from '../utils'
 
 export function register_sonolus_api(app: Hono) {
     const sonolus_router = new Hono();
@@ -14,7 +16,8 @@ export function register_sonolus_api(app: Hono) {
     // ==========================
 
     sonolus_router.post('/authenticate', async (c) => {
-        // TODO: 認証関数の作成。booleanを返してその後レスポンスの作成を行う
+        const result = await authenticate(c);
+        if (!result) c.sonolus.error(400, 'Authentication failed');
     })
 
     sonolus_router.get('/info', async (c) => {
@@ -25,26 +28,40 @@ export function register_sonolus_api(app: Hono) {
     // アイテム系(Generic Items API)
     // ==========================
     sonolus_router.get('/:item_type/info', async (c) => {
-        const item_type = c.req.param('item_type');
+        const raw_item_type = c.req.param('item_type');
+        if (!isValidItemType(raw_item_type)) return c.sonolus.error(404, 'Invalid item type');
+        const item_type: ItemKey = raw_item_type;
+        const api_plural_path = route_item[item_type];
     })
 
     sonolus_router.get('/:item_type/list', async (c) => {
-        const item_type = c.req.param('item_type');
+        const raw_item_type = c.req.param('item_type');
+        if (!isValidItemType(raw_item_type)) return c.sonolus.error(404, 'Invalid item type');
+        const item_type: ItemKey = raw_item_type;
     })
 
     sonolus_router.get('/:item_type/:item_id', async (c) => {
-        const item_type = c.req.param('item_type');
+        const raw_item_type = c.req.param('item_type');
         const item_id = c.req.param('item_id');
+
+        if (!isValidItemType(raw_item_type)) return c.sonolus.error(404, 'Invalid item type');
+        const item_type: ItemKey = raw_item_type;
     })
 
     sonolus_router.post('/:item_type/:name/submit', async (c) => {
-        const item_type = c.req.param('item_type');
+        const raw_item_type = c.req.param('item_type');
         const name = c.req.param('name');
+
+        if (!isValidItemType(raw_item_type)) return c.sonolus.error(404, 'Invalid item type');
+        const item_type: ItemKey = raw_item_type;
     })
 
     sonolus_router.post('/:item_type/:item_id/upload', async (c) => {
-        const item_type = c.req.param('item_type');
+        const raw_item_type = c.req.param('item_type');
         const item_id = c.req.param('item_id');
+
+        if (!isValidItemType(raw_item_type)) return c.sonolus.error(404, 'Invalid item type');
+        const item_type: ItemKey = raw_item_type;
     })
 
     app.route('/sonolus', sonolus_router);
