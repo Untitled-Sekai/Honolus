@@ -46,7 +46,7 @@ export class SonolusContext {
     }
 
     public get signature(): string | null {
-        const signature = this.context.req.header('sonolus-signature');
+        const signature = this.context.req.header('Sonolus-Signature');
         if (signature) {
             return signature;
         } else {
