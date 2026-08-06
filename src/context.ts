@@ -26,6 +26,16 @@ export class SonolusContext {
         }
     }
 
+    public get pagination() {
+        const page = parseInt(this.context.req.query('page') ?? '0', 10);
+        return {
+            page: isNaN(page) ? 0 : page,
+            offset: this.utils.page_2_offset(isNaN(page) ? 0 : page),
+            cursor: this.context.req.query('cursor') ?? null,
+            limit: ITEMS_PER_PAGE
+        }
+    }
+
     public get session(): string | null {
         const session = this.context.req.header('Sonolus-Session');
         if (session) {
@@ -39,6 +49,15 @@ export class SonolusContext {
         const signature = this.context.req.header('sonolus-signature');
         if (signature) {
             return signature;
+        } else {
+            return null;
+        }
+    }
+
+    public get upload_key(): string | null {
+        const upload_key = this.context.req.header('Sonolus-Upload-Key');
+        if (upload_key) {
+            return upload_key;
         } else {
             return null;
         }
