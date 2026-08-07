@@ -28,7 +28,7 @@ export default sonolus.getApp()
 
 `server.authenticate` では、最初に `src/api/authenticate.ts` の認証処理が実行されます。リクエスト形式、期限、署名の検証がすべて成功した場合だけ `handle` が呼ばれます。検証に失敗した場合は、その時点でエラーレスポンスを返し、`handle` は呼ばれません。
 
-## 可変アイテムルート
+## アイテムルート
 
 ```ts
 import type { ServerItemInfo } from '@sonolus/core'
@@ -91,6 +91,76 @@ class LevelListHandler {
 detailの `handle` には、`SonolusContext` の次の引数として `itemName: string` が明示的に渡されます。同じ値は `c.itemName` または `c.param('itemName')` でも取得できます。各デコレーターのレスポンス型はアイテムごとに分かれており、例えば `server.level.detail` は `ServerItemDetails<LevelItem>` を要求します。
 
 listもアイテムごとに型が決まります。例えば `server.level.list` は `ServerItemList<LevelItem>`、`server.post.list` は `ServerItemList<PostItem>` を要求するため、`items` に異なる種類のアイテムを返すと型エラーになります。
+
+## 全エンドポイント
+
+表の `server` は `sonolus.route.server` を表します。
+
+| デコレーター | HTTPルート |
+| --- | --- |
+| `server.info` | `GET /sonolus/info` |
+| `server.authenticate` | `POST /sonolus/authenticate` |
+| `server.<item>.info` | `GET /sonolus/{type}/info` |
+| `server.<item>.list` | `GET /sonolus/{type}/list` |
+| `server.<item>.detail` | `GET /sonolus/{type}/{itemName}` |
+| `server.<item>.create` | `POST /sonolus/{type}/create` |
+| `server.<item>.createUpload` | `POST /sonolus/{type}/upload` |
+| `server.<item>.submit` | `POST /sonolus/{type}/{itemName}/submit` |
+| `server.<item>.upload` | `POST /sonolus/{type}/{itemName}/upload` |
+| `server.<item>.community.info` | `GET /sonolus/{type}/{itemName}/community/info` |
+| `server.<item>.community.submit` | `POST /sonolus/{type}/{itemName}/community/submit` |
+| `server.<item>.community.upload` | `POST /sonolus/{type}/{itemName}/community/upload` |
+| `server.<item>.community.comments.list` | `GET /sonolus/{type}/{itemName}/community/comments/list` |
+| `server.<item>.community.comments.submit` | `POST /sonolus/{type}/{itemName}/community/comments/{commentName}/submit` |
+| `server.<item>.community.comments.upload` | `POST /sonolus/{type}/{itemName}/community/comments/{commentName}/upload` |
+| `server.<item>.leaderboard.detail` | `GET /sonolus/{type}/{itemName}/leaderboards/{leaderboardName}` |
+| `server.<item>.leaderboard.records.list` | `GET /sonolus/{type}/{itemName}/leaderboards/{leaderboardName}/records/list` |
+| `server.<item>.leaderboard.records.detail` | `GET /sonolus/{type}/{itemName}/leaderboards/{leaderboardName}/records/{recordName}` |
+| `server.level.result.info` | `GET /sonolus/levels/result/info` |
+| `server.level.result.submit` | `POST /sonolus/levels/result/submit` |
+| `server.level.result.upload` | `POST /sonolus/levels/result/upload` |
+| `server.room.create` | `POST /sonolus/rooms/create` |
+| `server.room.join` | `POST /sonolus/rooms/{itemName}` |
+
+`<item>` は `post`, `playlist`, `level`, `skin`, `background`, `effect`, `particle`, `engine`, `replay` のいずれかです。roomは読み取り用の `info`, `list`, `detail` と、専用の `create`, `join` を持ちます。
+
+## クエリパラメーター
+
+クエリ名は固定していないため、Configuration Optionsを含む任意の値を取得できます。
+
+```ts
+@sonolus.route.server.level.list
+class LevelListHandler {
+    async handle(c: SonolusContext): Promise<ServerItemList<LevelItem>> {
+        const search = c.query('search')          // string | undefined
+        const tags = c.queries('tag')             // string[]
+        const all = c.queryParams                 // URLSearchParams
+        const page = c.pagination.page
+        const cursor = c.pagination.cursor
+
+        return await findLevels({ search, tags, all, page, cursor })
+    }
+}
+```
+
+## POSTリクエストとパス引数
+
+JSON本文、パス引数、アップロードデータは `SonolusContext` より後ろへ型付きで渡されます。
+
+```ts
+@sonolus.route.server.post.submit
+class PostSubmitHandler {
+    async handle(
+        c: SonolusContext,
+        itemName: string,
+        request: ServerSubmitItemActionRequest,
+    ): Promise<ServerSubmitItemActionResponse> {
+        return await submitPostAction(itemName, request, c.session)
+    }
+}
+```
+
+multipartエンドポイントでは最後の引数が `FormData` になります。`Sonolus-Upload-Key` は `c.upload_key`、ルーム作成キーは `c.room_key`、その他のヘッダーは `c.header(name)` で取得できます。
 
 `sonolus` はデコレーターより先に生成してください。デコレーターの評価時に、その `sonolus` インスタンスへルートが登録されます。同じインスタンスの同じ HTTP メソッド・パスへ複数のハンドラーを登録するとエラーになります。
 

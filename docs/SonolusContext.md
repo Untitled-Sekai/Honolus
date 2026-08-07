@@ -8,12 +8,19 @@ honoのContextに、`sonolus`を拡張し、そこから使えます。`c.sonolu
 |--|--|--|
 |version|バージョンを取得|string|
 |localization|言語の取得|string|
+|query(name)|クエリパラメーターの先頭の値を取得|string/undefined|
+|queries(name)|同名のクエリパラメーターをすべて取得|string[]|
+|queryParams|全クエリパラメーターを取得|URLSearchParams|
 |params|動的ルートパラメーターをすべて取得|Record<string, string>|
 |param(name)|指定した動的ルートパラメーターを取得|string/undefined|
 |itemName|detailルートのアイテム名を取得|string/undefined|
+|json&lt;T&gt;()|JSONリクエスト本文を取得|Promise&lt;T&gt;|
+|formData()|multipart/form-data本文を取得|Promise&lt;FormData&gt;|
+|header(name)|任意のリクエストヘッダーを取得|string/undefined|
 |pagination|ページ、オフセット、カーソル、リミットの取得|```{page: number, offset: number, cursor?: string, limit: number};```|
 |session|ヘッダの`Sonolus-Session`からセッションの取得|string/null|
 |signature|ヘッダの`Sonolus-Signature`の取得|string/null|
 |upload_key|アップロードキーの取得|string/null|
+|room_key|ルーム作成キーの取得|string/null|
 |error|エラーを投げる|-|
 |utils|ユーティリティ関数|-|

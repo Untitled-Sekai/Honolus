@@ -13,7 +13,7 @@ export interface RouteDefinition<
     /** Hooks run in order before the class handler. Returning a Response stops the chain. */
     readonly before?: readonly RouteHook[];
     /** Builds the arguments passed after SonolusContext to handle(). */
-    readonly arguments?: (context: Context) => TArguments;
+    readonly arguments?: (context: Context) => TArguments | Promise<TArguments>;
     readonly respond?: (context: Context, value: TResponse) => Response;
 }
 
@@ -85,7 +85,7 @@ export class RouteRegistry {
             }
 
             const arguments_ = definition.arguments
-                ? definition.arguments(context)
+                ? await definition.arguments(context)
                 : [] as unknown as TArguments;
             const value = await new Handler().handle(context.sonolus, ...arguments_);
             return definition.respond?.(context, value) ?? context.json(value);

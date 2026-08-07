@@ -26,6 +26,36 @@ export class SonolusContext {
         }
     }
 
+    /** Returns the first value of a query parameter. */
+    public query(name: string): string | undefined {
+        return this.context.req.query(name);
+    }
+
+    /** Returns every value of a repeated query parameter. */
+    public queries(name: string): string[] {
+        return this.context.req.queries(name) ?? [];
+    }
+
+    /** Mutable URLSearchParams view containing all query parameters. */
+    public get queryParams(): URLSearchParams {
+        return new URL(this.context.req.url).searchParams;
+    }
+
+    /** Parses the request JSON body with a caller-selected type. */
+    public json<T = unknown>(): Promise<T> {
+        return this.context.req.json<T>();
+    }
+
+    /** Parses a multipart/form-data or application/x-www-form-urlencoded body. */
+    public formData(): Promise<FormData> {
+        return this.context.req.formData();
+    }
+
+    /** Returns an arbitrary request header. */
+    public header(name: string): string | undefined {
+        return this.context.req.header(name);
+    }
+
     /** Returns all dynamic route parameters, such as `type` and `itemName`. */
     public get params(): Record<string, string> {
         return this.context.req.param();
@@ -76,6 +106,10 @@ export class SonolusContext {
         } else {
             return null;
         }
+    }
+
+    public get room_key(): string | null {
+        return this.header('Sonolus-Room-Key') ?? null;
     }
 
     public error(status: ContentfulStatusCode, message: string) {
