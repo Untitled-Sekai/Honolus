@@ -99,3 +99,37 @@ test('static info route wins even when detail is decorated first', async () => {
     assert.equal(response.status, 200);
     assert.deepEqual(await response.json(), { route: 'info' });
 });
+
+test('typed list route wins over detail and returns pagination', async () => {
+    const sonolus = new Honolus();
+
+    class LevelDetailHandler {
+        handle() {
+            return { route: 'detail' };
+        }
+    }
+
+    class LevelListHandler {
+        handle(context) {
+            return {
+                title: 'Levels',
+                pageCount: 3,
+                items: [],
+                quickSearchValues: `offset=${context.pagination.offset}`,
+            };
+        }
+    }
+
+    sonolus.route.server.level.detail(LevelDetailHandler);
+    sonolus.route.server.level.list(LevelListHandler);
+
+    const response = await sonolus.getApp().request('/sonolus/levels/list?page=2');
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), {
+        title: 'Levels',
+        pageCount: 3,
+        items: [],
+        quickSearchValues: 'offset=40',
+    });
+});

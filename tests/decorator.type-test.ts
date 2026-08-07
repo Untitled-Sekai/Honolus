@@ -3,6 +3,7 @@ import type {
     ServerAuthenticateResponse,
     ServerItemDetails,
     ServerItemInfo,
+    ServerItemList,
 } from '@sonolus/core';
 import { Honolus, SonolusContext } from '../src';
 
@@ -42,3 +43,15 @@ class ItemDetailHandler {
 
 void ItemInfoHandler;
 void ItemDetailHandler;
+
+@sonolus.route.server.post.list
+class ItemListHandler {
+    async handle(_context: SonolusContext): Promise<ServerItemList<PostItem>> {
+        return {
+            pageCount: 1,
+            items: [],
+        };
+    }
+}
+
+void ItemListHandler;

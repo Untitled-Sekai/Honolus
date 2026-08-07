@@ -59,20 +59,38 @@ class ItemDetailHandler {
 }
 ```
 
+```ts
+import type { LevelItem, ServerItemList } from '@sonolus/core'
+
+@sonolus.route.server.level.list
+class LevelListHandler {
+    async handle(c: SonolusContext): Promise<ServerItemList<LevelItem>> {
+        const items = await loadLevels(c.pagination)
+
+        return {
+            pageCount: c.utils.calc_pagecount(items.totalCount),
+            items: items.values,
+        }
+    }
+}
+```
+
 | 種類 | デコレーター例 | HTTPルート |
 | --- | --- | --- |
-| post | `server.post.info` / `server.post.detail` | `/sonolus/posts/info` / `/sonolus/posts/:itemName` |
-| playlist | `server.playlist.info` / `server.playlist.detail` | `/sonolus/playlists/...` |
-| level | `server.level.info` / `server.level.detail` | `/sonolus/levels/...` |
-| skin | `server.skin.info` / `server.skin.detail` | `/sonolus/skins/...` |
-| background | `server.background.info` / `server.background.detail` | `/sonolus/backgrounds/...` |
-| effect | `server.effect.info` / `server.effect.detail` | `/sonolus/effects/...` |
-| particle | `server.particle.info` / `server.particle.detail` | `/sonolus/particles/...` |
-| engine | `server.engine.info` / `server.engine.detail` | `/sonolus/engines/...` |
-| replay | `server.replay.info` / `server.replay.detail` | `/sonolus/replays/...` |
-| room | `server.room.info` / `server.room.detail` | `/sonolus/rooms/...` |
+| post | `server.post.info` / `.list` / `.detail` | `/sonolus/posts/info` / `/list` / `/:itemName` |
+| playlist | `server.playlist.info` / `.list` / `.detail` | `/sonolus/playlists/...` |
+| level | `server.level.info` / `.list` / `.detail` | `/sonolus/levels/...` |
+| skin | `server.skin.info` / `.list` / `.detail` | `/sonolus/skins/...` |
+| background | `server.background.info` / `.list` / `.detail` | `/sonolus/backgrounds/...` |
+| effect | `server.effect.info` / `.list` / `.detail` | `/sonolus/effects/...` |
+| particle | `server.particle.info` / `.list` / `.detail` | `/sonolus/particles/...` |
+| engine | `server.engine.info` / `.list` / `.detail` | `/sonolus/engines/...` |
+| replay | `server.replay.info` / `.list` / `.detail` | `/sonolus/replays/...` |
+| room | `server.room.info` / `.list` / `.detail` | `/sonolus/rooms/...` |
 
 detailの `handle` には、`SonolusContext` の次の引数として `itemName: string` が明示的に渡されます。同じ値は `c.itemName` または `c.param('itemName')` でも取得できます。各デコレーターのレスポンス型はアイテムごとに分かれており、例えば `server.level.detail` は `ServerItemDetails<LevelItem>` を要求します。
+
+listもアイテムごとに型が決まります。例えば `server.level.list` は `ServerItemList<LevelItem>`、`server.post.list` は `ServerItemList<PostItem>` を要求するため、`items` に異なる種類のアイテムを返すと型エラーになります。
 
 `sonolus` はデコレーターより先に生成してください。デコレーターの評価時に、その `sonolus` インスタンスへルートが登録されます。同じインスタンスの同じ HTTP メソッド・パスへ複数のハンドラーを登録するとエラーになります。
 
