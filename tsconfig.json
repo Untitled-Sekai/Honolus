@@ -6,6 +6,7 @@
     "lib": ["ES2022"],
     "strict": true,
     "skipLibCheck": true,
+    "declaration": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "types": ["node"],

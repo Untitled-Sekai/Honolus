@@ -13,3 +13,6 @@ export { authenticateSchema };
 
 import { serviceUserProfileSchema } from './user';
 export { serviceUserProfileSchema };
+
+import { RouteKey } from './route';
+export { RouteKey };
