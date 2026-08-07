@@ -8,6 +8,9 @@ honoのContextに、`sonolus`を拡張し、そこから使えます。`c.sonolu
 |--|--|--|
 |version|バージョンを取得|string|
 |localization|言語の取得|string|
+|params|動的ルートパラメーターをすべて取得|Record<string, string>|
+|param(name)|指定した動的ルートパラメーターを取得|string/undefined|
+|itemName|detailルートのアイテム名を取得|string/undefined|
 |pagination|ページ、オフセット、カーソル、リミットの取得|```{page: number, offset: number, cursor?: string, limit: number};```|
 |session|ヘッダの`Sonolus-Session`からセッションの取得|string/null|
 |signature|ヘッダの`Sonolus-Signature`の取得|string/null|

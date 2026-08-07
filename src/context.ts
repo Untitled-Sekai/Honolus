@@ -26,6 +26,21 @@ export class SonolusContext {
         }
     }
 
+    /** Returns all dynamic route parameters, such as `type` and `itemName`. */
+    public get params(): Record<string, string> {
+        return this.context.req.param();
+    }
+
+    /** Returns one dynamic route parameter. */
+    public param(name: string): string | undefined {
+        return this.context.req.param(name);
+    }
+
+    /** Item name supplied to a detail route. */
+    public get itemName(): string | undefined {
+        return this.param('itemName');
+    }
+
     public get pagination() {
         const page = parseInt(this.context.req.query('page') ?? '0', 10);
         return {

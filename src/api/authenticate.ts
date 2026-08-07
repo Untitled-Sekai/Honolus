@@ -1,51 +1,55 @@
 import type { Context } from 'hono';
-import { SonolusContext } from '../context';
-import {
-    getSignaturePublicKey,
-    ServerAuthenticateResponse
-} from '@sonolus/core'
+import { getSignaturePublicKey } from '@sonolus/core';
 import { authenticateSchema } from '../type';
 
-
-export async function authenticate(c: Context): Promise<boolean> {
+export async function authenticate(c: Context): Promise<Response | undefined> {
     /**
      * Sonolusの認証を行う関数
      * Function to perform Sonolus authentication
      * 
      * @param c Honoのコンテキスト / Hono context
-     * @returns 認証結果 boolean / Authentication result boolean
+     * @returns 検証失敗時のレスポンス。成功時はundefined。
+     *          Error response on failure, or undefined on success.
      */
-    c.sonolus = new SonolusContext(c); 
     const { subtle } = globalThis.crypto;
     const session = c.sonolus.session;
     const signature = c.sonolus.signature;
 
     if (!session || !signature) {
-        c.sonolus.error(400, 'Missing session or signature');
-        return false;
+        return c.sonolus.error(400, 'Missing session or signature');
     }
 
-    const rawBody = await c.req.json();
-    const body = await authenticateSchema.parseAsync(rawBody)
-    const signaturePublicKey = await getSignaturePublicKey()
+    let body;
+    try {
+        const rawBody = await c.req.json();
+        body = await authenticateSchema.parseAsync(rawBody);
+    } catch {
+        return c.sonolus.error(400, 'Invalid authentication request');
+    }
+
+    const signaturePublicKey = await getSignaturePublicKey();
 
     // TODO: 他の検証は後ほど実装
 
     if (body.time + 60 * 1000 < Date.now()) {
-        c.sonolus.error(400, 'Request expired');
-        return false;
+        return c.sonolus.error(400, 'Request expired');
     }
 
-    const result = await subtle.verify(
-        { name: 'ECDSA', hash: 'SHA-256' },
-        signaturePublicKey,
-        Buffer.from(signature, 'base64'),
-        Buffer.from(JSON.stringify(body))
-    )
+    let result = false;
+    try {
+        result = await subtle.verify(
+            { name: 'ECDSA', hash: 'SHA-256' },
+            signaturePublicKey,
+            Buffer.from(signature, 'base64'),
+            Buffer.from(JSON.stringify(body)),
+        );
+    } catch {
+        return c.sonolus.error(400, 'Invalid signature');
+    }
+
     if (!result) {
-        c.sonolus.error(400, 'Invalid signature');
-        return false;
+        return c.sonolus.error(400, 'Invalid signature');
     }
 
-    return true;
+    return undefined;
 }

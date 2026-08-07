@@ -37,5 +37,8 @@ export type {
     RouteDefinition,
     RouteHandler,
     RouteHandlerConstructor,
+    RouteHook,
     RouteMethod,
+    RoutableItem,
+    RoutableItemType,
 } from './api';

@@ -1,4 +1,9 @@
-import type { ServerAuthenticateResponse } from '@sonolus/core';
+import type {
+    PostItem,
+    ServerAuthenticateResponse,
+    ServerItemDetails,
+    ServerItemInfo,
+} from '@sonolus/core';
 import { Honolus, SonolusContext } from '../src';
 
 const sonolus = new Honolus();
@@ -14,3 +19,26 @@ class AuthenticateHandler {
 }
 
 void AuthenticateHandler;
+
+@sonolus.route.server.level.info
+class ItemInfoHandler {
+    async handle(context: SonolusContext): Promise<ServerItemInfo> {
+        void context.param('type');
+        return { sections: [] };
+    }
+}
+
+@sonolus.route.server.post.detail
+class ItemDetailHandler {
+    async handle(
+        context: SonolusContext,
+        itemName: string,
+    ): Promise<ServerItemDetails<PostItem>> {
+        void context.itemName;
+        void itemName;
+        throw new Error('Type-only test');
+    }
+}
+
+void ItemInfoHandler;
+void ItemDetailHandler;
