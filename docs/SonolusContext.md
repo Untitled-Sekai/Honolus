@@ -11,6 +11,9 @@ honoのContextに、`sonolus`を拡張し、そこから使えます。`c.sonolu
 |query(name)|クエリパラメーターの先頭の値を取得|string/undefined|
 |queries(name)|同名のクエリパラメーターをすべて取得|string[]|
 |queryParams|全クエリパラメーターを取得|URLSearchParams|
+|search(registration)|登録定義から型推論して検索値を取得|SearchValue&lt;T&gt;|
+|search()|現在のアイテム種類に登録された検索値を取得|AnySearchValue/undefined|
+|searchForms|現在のアイテム種類に登録されたフォームを取得|ServerForm[]/undefined|
 |params|動的ルートパラメーターをすべて取得|Record<string, string>|
 |param(name)|指定した動的ルートパラメーターを取得|string/undefined|
 |itemName|detailルートのアイテム名を取得|string/undefined|

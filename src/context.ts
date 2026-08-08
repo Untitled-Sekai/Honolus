@@ -5,12 +5,21 @@
 
 import type { Context } from 'hono';
 import type { ContentfulStatusCode } from 'hono/utils/http-status';
+import type { ServerForm } from '@sonolus/core';
 import { ITEMS_PER_PAGE } from './type';
+import { parseSearch } from './search';
+import type {
+    AnySearchValue,
+    RegisteredSearch,
+    SearchForms,
+    SearchValue,
+} from './search';
 
 export class SonolusContext {
     constructor(
         private readonly context: Context,
-        private readonly sonolus_version: string = '1.1.3'
+        private readonly sonolus_version: string = '1.1.3',
+        private readonly registeredSearch?: RegisteredSearch,
     ) {}
 
     public get version(): string {
@@ -39,6 +48,25 @@ export class SonolusContext {
     /** Mutable URLSearchParams view containing all query parameters. */
     public get queryParams(): URLSearchParams {
         return new URL(this.context.req.url).searchParams;
+    }
+
+    /** Parses search parameters using a registered, type-safe search definition. */
+    public search<TForms extends SearchForms>(registration: RegisteredSearch<TForms>): SearchValue<TForms>;
+    /** Parses search parameters using the definition registered for the current item route. */
+    public search(): AnySearchValue | undefined;
+    public search<TForms extends SearchForms>(
+        registration?: RegisteredSearch<TForms>,
+    ): SearchValue<TForms> | AnySearchValue | undefined {
+        const target = registration ?? this.registeredSearch;
+        if (!target) return undefined;
+        return parseSearch(this.queryParams, target);
+    }
+
+    /** Search forms registered for the current item route. */
+    public get searchForms(): ServerForm[] | undefined {
+        return this.registeredSearch
+            ? [...this.registeredSearch.forms] as ServerForm[]
+            : undefined;
     }
 
     /** Parses the request JSON body with a caller-selected type. */

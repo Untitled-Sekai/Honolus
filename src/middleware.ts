@@ -1,13 +1,17 @@
 import { SonolusContext } from './context';
 import type { Context, Next } from 'hono';
+import type { RegisteredSearch } from './search';
 
-export const sonolusMiddleware = (sonolusVersion = '1.1.3') => {
+export const sonolusMiddleware = (
+    sonolusVersion = '1.1.3',
+    resolveSearch?: (path: string) => RegisteredSearch | undefined,
+) => {
     /**
      * SonolusContextをHonoのコンテキストに追加するミドルウェア
      * Middleware to add SonolusContext to Hono context
      */
     return async (c: Context, next: Next) => {
-        c.sonolus = new SonolusContext(c, sonolusVersion);
+        c.sonolus = new SonolusContext(c, sonolusVersion, resolveSearch?.(c.req.path));
         await next();
     };
 };

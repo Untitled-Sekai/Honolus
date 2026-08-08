@@ -1,5 +1,7 @@
 # SonolusAPI
 
+検索フォームの型推論と登録については [SonolusSearch](./SonolusSearch.md) を参照してください。
+
 `Honolus` のインスタンスが持つデコレーターをクラスに付けることで、Sonolus API のルートを登録できます。
 
 ## 基本的な使い方

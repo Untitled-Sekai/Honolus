@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { RouteRegistry, SonolusRoutes } from './api';
 import { sonolusMiddleware, version_middleware } from './middleware';
+import { SonolusSearchRegistry } from './search';
 
 export interface HonolusOptions {
     /** Prefix used for every Sonolus API endpoint. */
@@ -12,12 +13,21 @@ export interface HonolusOptions {
 export class Honolus {
     private readonly app: Hono;
     public readonly route: SonolusRoutes;
+    public readonly search: SonolusSearchRegistry;
 
     constructor(options: HonolusOptions = {}) {
         const basePath = normalizeBasePath(options.basePath ?? '/sonolus');
 
         this.app = new Hono();
-        this.app.use(`${basePath}/*`, sonolusMiddleware(options.version), version_middleware());
+        this.search = new SonolusSearchRegistry();
+        this.app.use(
+            `${basePath}/*`,
+            sonolusMiddleware(
+                options.version,
+                (path) => this.search.resolve(path, basePath),
+            ),
+            version_middleware(),
+        );
         this.route = new SonolusRoutes(new RouteRegistry(this.app, basePath));
     }
 
@@ -32,6 +42,7 @@ function normalizeBasePath(path: `/${string}`): string {
 }
 
 export { SonolusContext } from './context';
+export { SonolusSearchRegistry } from './search';
 export type {
     RouteDecorator,
     RouteDefinition,
@@ -42,3 +53,15 @@ export type {
     RoutableItem,
     RoutableItemType,
 } from './api';
+export type {
+    AnySearchValue,
+    QuickSearchValue,
+    RegisteredSearch,
+    RegisteredSearchValue,
+    SearchForm,
+    SearchForms,
+    SearchFormValue,
+    SearchItemType,
+    SearchSlot,
+    SearchValue,
+} from './search';
