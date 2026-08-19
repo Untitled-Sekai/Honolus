@@ -17,6 +17,7 @@ a.
 ## Docs
 
 - [SonolusDatabase](./docs/SonolusDatabase.md)
+- [SonolusPack](./docs/SonolusPack.md)
 - [SonolusAPI](./docs/SonolusAPI.md)
 - [SonolusContext](./docs/SonolusContext.md)
 - [SonolusSearch](./docs/SonolusSearch.md)
