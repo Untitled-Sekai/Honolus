@@ -4,6 +4,8 @@
 
 結論として、`@sonolus/free-pack` の `pack` を正規のインポート元として扱い、`.scp` は配布・静的配信用のアーカイブとして扱います。両方を受け付けられるようにしますが、`.scp` をそのままデータベースの正規データにする設計にはしません。
 
+現在の実装状況では、directory source の import、filesystem asset store、SHA-1 検証、冪等 import、競合処理までを実装済みです。`.scp` の static mount と ZIP source は、同じ source 契約へ接続する次の実装段階です。
+
 ## なぜ `pack` と `.scp` を分けるのか
 
 `@sonolus/free-pack` には、役割の異なる二つのディレクトリがあります。

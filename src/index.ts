@@ -3,6 +3,16 @@ import { RouteRegistry, SonolusRoutes } from './api';
 import { sonolusMiddleware, version_middleware } from './middleware';
 import { SonolusSearchRegistry } from './search';
 
+export { FileSonolusAssetStore, importSonolusPack } from './pack';
+export type {
+    ImportSonolusPackOptions,
+    SonolusAssetStore,
+    SonolusPackConflict,
+    SonolusPackImportResult,
+    SonolusPackManifest,
+    SonolusPackSource,
+} from './pack';
+
 export { createSonolusDatabase } from './db';
 export type {
     DatabaseSeed,
