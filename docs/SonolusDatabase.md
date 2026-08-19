@@ -114,7 +114,7 @@ Sonolus の検索フォームは URL の値を解釈する層であり、DB 層�
 export type SonolusQuery<T extends SonolusItemType> = {
     where?: SonolusWhere<T>
     search?: string
-    tags?: { name: string; value?: string }[]
+    tags?: string[]
     orderBy?: SonolusOrder<T>[]
     page?: Page
 }
@@ -131,6 +131,8 @@ export type SonolusWhere<T extends SonolusItemType> = {
     rating?: { min?: number; max?: number }
 }
 ```
+
+`tags` は `@sonolus/core` の `DatabaseTag` に含まれる localized title と icon を対象に、指定した文字列をすべて含むアイテムを検索します。
 
 実装時には `T` ごとに使用可能なフィールドを狭めます。例えば `rating` は `level` にだけ許可し、`time` が存在しないアイテムでは並び替えを拒否します。検索結果の順序は常に安定させ、指定された `orderBy` の末尾に `{ field: 'name', direction: 'asc' }` を暗黙に加えます。これによりページング中の重複や欠落を避けます。
 

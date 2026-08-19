@@ -3,6 +3,26 @@ import { RouteRegistry, SonolusRoutes } from './api';
 import { sonolusMiddleware, version_middleware } from './middleware';
 import { SonolusSearchRegistry } from './search';
 
+export { createSonolusDatabase } from './db';
+export type {
+    DatabaseSeed,
+    ItemKey,
+    JsonDatabaseOptions,
+    MemoryDatabaseOptions,
+    Page,
+    PageResult,
+    SonolusDatabase,
+    SonolusDatabaseOptions,
+    SonolusItem,
+    SonolusItemMap,
+    SonolusItemType,
+    SonolusOrder,
+    SonolusOrderField,
+    SonolusQuery,
+    SonolusRepository,
+    SonolusWhere,
+} from './db';
+
 export interface HonolusOptions {
     /** Prefix used for every Sonolus API endpoint. */
     basePath?: `/${string}`;
