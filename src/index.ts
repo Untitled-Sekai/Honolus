@@ -2,13 +2,14 @@ import { Hono } from 'hono';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { RouteRegistry, SonolusRoutes } from './api';
-import { sonolusMiddleware, version_middleware } from './middleware';
+import { error_middleware, request_id_middleware, sonolusMiddleware, version_middleware } from './middleware';
 import { SonolusSearchRegistry } from './search';
 
 import { ScpArchive, directoryStaticMiddleware, scpStaticMiddleware } from './pack';
 import type { SonolusAssetStore } from './pack';
 import type { SonolusDatabase } from './db';
 import { createDatabaseHandlers } from './api/server/item/database';
+import { z } from 'zod';
 
 export { FileSonolusAssetStore, importSonolusPack, ScpArchive, directoryStaticMiddleware, scpStaticMiddleware } from './pack';
 export type {
@@ -21,6 +22,8 @@ export type {
 } from './pack';
 
 export { createSonolusDatabase } from './db';
+export { HonolusError, respondError } from './error';
+export type { HonolusErrorCode } from './error';
 export type {
     DatabaseSeed,
     ItemKey,
@@ -39,6 +42,7 @@ export type {
     SonolusRepository,
     SonolusWhere,
 } from './db';
+export type { SqlDatabaseOptions, SqlExecutor, SqlRow } from './db';
 
 export interface HonolusOptions {
     /** Prefix used for every Sonolus API endpoint. */
@@ -52,17 +56,31 @@ export interface HonolusOptions {
         | { type: 'scp'; path: string; mode?: 'static' }
         | { type: 'directory'; path: string; mode?: 'static' }
         | { type: 'npm'; packageName: string; mode?: 'static' };
+    health?: { enabled?: boolean };
 }
 
 export class Honolus {
     private readonly app: Hono;
     public readonly route: SonolusRoutes;
     public readonly search: SonolusSearchRegistry;
+    private readonly database?: SonolusDatabase;
 
     constructor(options: HonolusOptions = {}) {
+        validateOptions(options);
         const basePath = normalizeBasePath(options.basePath ?? '/sonolus');
 
         this.app = new Hono();
+        this.database = options.database;
+        this.app.use('*', request_id_middleware(), error_middleware());
+        this.app.get('/health/live', (context) => context.json({ status: 'ok', requestId: context.get('requestId') }));
+        this.app.get('/health/ready', async (context) => {
+            try {
+                await this.database?.ready?.();
+                return context.json({ status: 'ok', requestId: context.get('requestId') });
+            } catch {
+                return context.json({ status: 'not_ready', requestId: context.get('requestId') }, 503);
+            }
+        });
         this.search = new SonolusSearchRegistry();
         this.app.use(
             `${basePath}/*`,
@@ -91,6 +109,18 @@ export class Honolus {
     public getApp(): Hono {
         return this.app;
     }
+
+    public async close(): Promise<void> {
+        await this.database?.close();
+    }
+}
+
+function validateOptions(options: HonolusOptions): void {
+    const result = z.object({
+        basePath: z.string().regex(/^\//).optional(),
+        version: z.string().min(1).optional(),
+    }).safeParse(options);
+    if (!result.success) throw new Error(`Invalid Honolus options: ${result.error.issues.map((issue) => issue.path.join('.')).join(', ')}`);
 }
 
 function registerDatabaseRoutes(routes: SonolusRoutes, database: SonolusDatabase): void {

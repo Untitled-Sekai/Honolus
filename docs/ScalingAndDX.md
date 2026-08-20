@@ -1,5 +1,7 @@
 # 大規模設計と DX のロードマップ
 
+> Phase 1 の基盤機能は実装済みです。SQL は PostgreSQL 互換の `SqlExecutor` を注入するアダプターとして提供し、Memory/JSON は開発・テスト用として引き続き利用できます。
+
 Honolus を、小規模な静的サーバーだけでなく、複数人・複数プロセス・大量データを扱うサーバー開発キットへ発展させるための設計方針をまとめます。
 
 この文書でいう「大規模」は、単に 1 台のサーバーを高性能にすることではありません。次の条件を満たし、機能追加や障害対応を続けられる状態を指します。
@@ -20,6 +22,10 @@ Honolus を、小規模な静的サーバーだけでなく、複数人・複数
 - `SonolusRepository` と検索 DSL による DB 実装の差し替え
 - pack import、asset store、`.scp` の static mount
 - Zod による外部データの検証
+- request id、統一エラーレスポンス、`/health/live`・`/health/ready`
+- SQL repository、migration、transaction の注入契約
+- keyset cursor と検索入力の上限
+- `Honolus.close()` による DB の graceful shutdown
 
 現在の実装を大規模用途へそのまま拡張する場合、特に次の制約があります。
 

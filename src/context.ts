@@ -145,7 +145,11 @@ export class SonolusContext {
     }
 
     public error(status: ContentfulStatusCode, message: string) {
-        return this.context.json({ error: message}, status);
+        return this.context.json({ error: message }, status);
+    }
+
+    public get requestId(): string | undefined {
+        return this.context.get('requestId') as string | undefined;
     }
 
     public utils = new SonolusUtils();

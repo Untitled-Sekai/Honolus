@@ -53,16 +53,19 @@ class MemorySonolusRepository<T extends SonolusItemType> implements SonolusRepos
     }
 
     public async list(query: SonolusQuery<T> = {}): Promise<PageResult<SonolusItemMap[T]>> {
+        validateQuery(query);
         const filtered = this.database.values(this.type).filter((item) => matches(item, query));
         sortItems(filtered, query);
-        const offset = decodeCursor(query.page?.cursor);
+        const order = normalizedOrder(query);
+        const cursor = decodeCursor(query.page?.cursor);
+        const start = cursor ? filtered.findIndex((item) => compareItemToCursor(item, order, cursor) > 0) : 0;
         const limit = normalizeLimit(query.page?.limit);
-        const items = filtered.slice(offset, offset + limit);
-        const nextOffset = offset + items.length;
+        const items = filtered.slice(start < 0 ? filtered.length : start, (start < 0 ? filtered.length : start) + limit);
+        const last = items[items.length - 1];
         return {
             items,
             totalCount: filtered.length,
-            ...(nextOffset < filtered.length ? { nextCursor: encodeCursor(nextOffset) } : {}),
+            ...(last && (start < 0 ? 0 : start) + items.length < filtered.length ? { nextCursor: encodeCursor(last, order) } : {}),
         };
     }
 
@@ -110,7 +113,7 @@ function matches<T extends SonolusItemType>(item: SonolusItemMap[T], query: Sono
 }
 
 function sortItems<T extends SonolusItemType>(items: SonolusItemMap[T][], query: SonolusQuery<T>): void {
-    const order = [...(query.orderBy ?? []), { field: 'name' as const, direction: 'asc' as const }];
+    const order = normalizedOrder(query);
     items.sort((left, right) => {
         for (const criterion of order) {
             const a = sortableValue(left, criterion.field);
@@ -143,17 +146,43 @@ function normalizeLimit(limit = DEFAULT_LIMIT): number {
     return limit;
 }
 
-function encodeCursor(offset: number): string {
-    return Buffer.from(JSON.stringify({ offset }), 'utf8').toString('base64url');
+type Cursor = { order: Array<{ field: string; direction: 'asc' | 'desc' }>; values: Array<string | number> };
+
+function normalizedOrder<T extends SonolusItemType>(query: SonolusQuery<T>) {
+    return [...(query.orderBy ?? []).map((item) => ({ field: item.field, direction: item.direction ?? 'asc' as const })), { field: 'name' as const, direction: 'asc' as const }];
 }
 
-function decodeCursor(cursor?: string): number {
-    if (!cursor) return 0;
+function encodeCursor(item: SonolusItem, order: Array<{ field: string; direction: 'asc' | 'desc' }>): string {
+    const value: Cursor = { order, values: order.map(({ field }) => sortableValue(item, field)) };
+    return Buffer.from(JSON.stringify(value), 'utf8').toString('base64url');
+}
+
+function decodeCursor(cursor?: string): Cursor | undefined {
+    if (!cursor) return undefined;
     try {
-        const value = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8')) as { offset?: unknown };
-        if (typeof value.offset !== 'number' || !Number.isInteger(value.offset) || value.offset < 0) throw new Error();
-        return value.offset;
+        const value = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8')) as Cursor;
+        if (!Array.isArray(value.order) || !Array.isArray(value.values) || value.order.length !== value.values.length) throw new Error();
+        if (value.order.some((item) => typeof item.field !== 'string' || (item.direction !== 'asc' && item.direction !== 'desc'))) throw new Error();
+        return value;
     } catch {
         throw new Error('Invalid pagination cursor');
     }
+}
+
+function compareItemToCursor(item: SonolusItem, order: Array<{ field: string; direction: 'asc' | 'desc' }>, cursor: Cursor): number {
+    if (JSON.stringify(order) !== JSON.stringify(cursor.order)) throw new Error('Pagination cursor does not match query order');
+    for (let i = 0; i < order.length; i += 1) {
+        const current = sortableValue(item, order[i].field);
+        const previous = cursor.values[i];
+        if (current === previous) continue;
+        const result = current < previous ? -1 : 1;
+        return order[i].direction === 'desc' ? -result : result;
+    }
+    return 0;
+}
+
+function validateQuery<T extends SonolusItemType>(query: SonolusQuery<T>): void {
+    if (query.search && query.search.length > 256) throw new RangeError('query.search must be at most 256 characters');
+    if ((query.tags?.length ?? 0) > 20) throw new RangeError('query.tags must contain at most 20 values');
+    if ((query.where?.name?.in?.length ?? 0) > 1000) throw new RangeError('where.name.in must contain at most 1000 values');
 }

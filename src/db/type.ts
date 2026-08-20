@@ -74,7 +74,9 @@ export interface SonolusRepository<T extends SonolusItemType> {
 
 export interface SonolusDatabase {
     repository<T extends SonolusItemType>(type: T): SonolusRepository<T>;
+    transaction?<T>(fn: (database: SonolusDatabase) => Promise<T>): Promise<T>;
     close(): Promise<void>;
+    ready?(): Promise<void>;
 }
 
 export type DatabaseSeed = Partial<{
@@ -93,4 +95,5 @@ export type JsonDatabaseOptions = {
     seed?: DatabaseSeed | SonolusItem[];
 };
 
-export type SonolusDatabaseOptions = MemoryDatabaseOptions | JsonDatabaseOptions;
+import type { SqlDatabaseOptions } from './sql';
+export type SonolusDatabaseOptions = MemoryDatabaseOptions | JsonDatabaseOptions | SqlDatabaseOptions;

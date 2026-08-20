@@ -1,9 +1,13 @@
 import { JsonSonolusDatabase } from './json';
 import { MemorySonolusDatabase } from './memory';
+import { SqlSonolusDatabase } from './sql';
 import type { SonolusDatabase, SonolusDatabaseOptions } from './type';
+export { SqlSonolusDatabase } from './sql';
+export type { SqlDatabaseOptions, SqlExecutor, SqlRow } from './sql';
 
 export function createSonolusDatabase(options: SonolusDatabaseOptions): SonolusDatabase {
     if (options.driver === 'memory') return new MemorySonolusDatabase(options.seed);
+    if (options.driver === 'sql') return new SqlSonolusDatabase(options);
     return new JsonSonolusDatabase(options);
 }
 
