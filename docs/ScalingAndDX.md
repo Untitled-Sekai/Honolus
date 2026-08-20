@@ -1,6 +1,6 @@
 # 大規模設計と DX のロードマップ
 
-> Phase 1 の基盤機能は実装済みです。SQL は PostgreSQL 互換の `SqlExecutor` を注入するアダプターとして提供し、Memory/JSON は開発・テスト用として引き続き利用できます。
+> Phase 1・Phase 2 の基盤機能は実装済みです。SQL は PostgreSQL 互換の `SqlExecutor` を注入するアダプターとして提供し、Memory/JSON は開発・テスト用として引き続き利用できます。
 
 Honolus を、小規模な静的サーバーだけでなく、複数人・複数プロセス・大量データを扱うサーバー開発キットへ発展させるための設計方針をまとめます。
 
@@ -26,6 +26,10 @@ Honolus を、小規模な静的サーバーだけでなく、複数人・複数
 - SQL repository、migration、transaction の注入契約
 - keyset cursor と検索入力の上限
 - `Honolus.close()` による DB の graceful shutdown
+- 共有可能な `CacheStore`、`SessionStore`、`LockStore`、`RateLimitStore` 契約と Memory 実装
+- rate limit、request timeout、JSON 構造化ログ、メトリクス、trace 契約
+- idempotency を持つ Memory job queue と pack import worker
+- asset の ETag、条件付き GET、CDN 向け immutable cache header
 
 現在の実装を大規模用途へそのまま拡張する場合、特に次の制約があります。
 

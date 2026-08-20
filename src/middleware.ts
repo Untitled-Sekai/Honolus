@@ -5,6 +5,11 @@ import type { SonolusDatabase } from './db';
 import type { SonolusAssetStore } from './pack';
 import { randomUUID } from 'node:crypto';
 import { respondError } from './error';
+import { HonolusError } from './error';
+import type { Logger, Metrics, RateLimitStore, Tracer } from './runtime';
+
+export type RateLimitOptions = { limit: number; windowMs: number; store: RateLimitStore; key?: (context: Context) => string };
+export type ObservabilityOptions = { logger?: Logger; metrics?: Metrics; tracer?: Tracer };
 
 export const sonolusMiddleware = (
     sonolusVersion = '1.1.3',
@@ -50,6 +55,54 @@ export const request_id_middleware = () => async (c: Context, next: Next) => {
     c.set('requestId', requestId);
     c.header('X-Request-Id', requestId);
     await next();
+};
+
+export const timeout_middleware = (timeoutMs: number) => async (_c: Context, next: Next) => {
+    if (!Number.isInteger(timeoutMs) || timeoutMs < 1) throw new RangeError('timeoutMs must be a positive integer');
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+        await Promise.race([
+            next(),
+            new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new HonolusError('INTERNAL_ERROR', 'Request timed out', 504)), timeoutMs); }),
+        ]);
+    } finally {
+        if (timer) clearTimeout(timer);
+    }
+};
+
+export const rate_limit_middleware = (options: RateLimitOptions) => async (c: Context, next: Next) => {
+    if (!Number.isInteger(options.limit) || options.limit < 1 || options.windowMs < 1) throw new RangeError('Invalid rate limit options');
+    const key = options.key?.(c) ?? c.req.header('Sonolus-Session') ?? c.req.header('X-Forwarded-For')?.split(',')[0].trim() ?? 'anonymous';
+    const result = await options.store.increment(key, options.windowMs);
+    c.header('X-RateLimit-Limit', String(options.limit));
+    c.header('X-RateLimit-Remaining', String(Math.max(0, options.limit - result.count)));
+    c.header('X-RateLimit-Reset', String(Math.ceil(result.resetAt / 1000)));
+    if (result.count > options.limit) {
+        c.header('Retry-After', String(Math.max(1, Math.ceil((result.resetAt - Date.now()) / 1000))));
+        throw new HonolusError('RATE_LIMITED', 'Too many requests');
+    }
+    await next();
+};
+
+export const observability_middleware = (options: ObservabilityOptions = {}) => async (c: Context, next: Next) => {
+    const started = performance.now();
+    const span = options.tracer?.startSpan('http.request', { 'http.method': c.req.method, 'http.route': c.req.path });
+    let errorStatus: number | undefined;
+    try {
+        await next();
+    } catch (error) {
+        errorStatus = error instanceof HonolusError ? error.status : 500;
+        throw error;
+    } finally {
+        const duration = performance.now() - started;
+        const status = errorStatus ?? c.res.status;
+        const labels = { method: c.req.method, route: c.req.path, status: String(status) };
+        options.metrics?.increment('http.requests.total', 1, labels);
+        options.metrics?.observe('http.request.duration_ms', duration, labels);
+        span?.setAttribute('http.status_code', status);
+        span?.end();
+        options.logger?.log(status >= 500 ? 'error' : status >= 400 ? 'warn' : 'info', 'http.request', { requestId: c.get('requestId'), method: c.req.method, route: c.req.path, status, durationMs: Math.round(duration * 100) / 100 });
+    }
 };
 
 declare module 'hono' {

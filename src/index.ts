@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { RouteRegistry, SonolusRoutes } from './api';
-import { error_middleware, request_id_middleware, sonolusMiddleware, version_middleware } from './middleware';
+import { error_middleware, observability_middleware, rate_limit_middleware, request_id_middleware, sonolusMiddleware, timeout_middleware, version_middleware } from './middleware';
 import { SonolusSearchRegistry } from './search';
 
 import { ScpArchive, directoryStaticMiddleware, scpStaticMiddleware } from './pack';
@@ -10,6 +10,9 @@ import type { SonolusAssetStore } from './pack';
 import type { SonolusDatabase } from './db';
 import { createDatabaseHandlers } from './api/server/item/database';
 import { z } from 'zod';
+import type { JobQueue } from './jobs';
+import type { Logger, Metrics, Tracer } from './runtime';
+import { respondError } from './error';
 
 export { FileSonolusAssetStore, importSonolusPack, ScpArchive, directoryStaticMiddleware, scpStaticMiddleware } from './pack';
 export type {
@@ -23,6 +26,11 @@ export type {
 
 export { createSonolusDatabase } from './db';
 export { HonolusError, respondError } from './error';
+export { MemoryCacheStore, MemoryLockStore, MemoryMetrics, MemoryRateLimitStore, JsonConsoleLogger, NoopTracer } from './runtime';
+export { MemoryJobQueue, PACK_IMPORT_JOB, enqueuePackImport, registerPackImportWorker } from './jobs';
+export type { CacheStore, LockStore, Logger, Metrics, RateLimitStore, SessionStore, Span, Tracer } from './runtime';
+export type { JobQueue, JobRecord, JobHandler, JobState } from './jobs';
+export type { RateLimitOptions, ObservabilityOptions } from './middleware';
 export type { HonolusErrorCode } from './error';
 export type {
     DatabaseSeed,
@@ -57,6 +65,10 @@ export interface HonolusOptions {
         | { type: 'directory'; path: string; mode?: 'static' }
         | { type: 'npm'; packageName: string; mode?: 'static' };
     health?: { enabled?: boolean };
+    timeoutMs?: number;
+    rateLimit?: import('./middleware').RateLimitOptions;
+    observability?: { logger?: Logger; metrics?: Metrics; tracer?: Tracer };
+    jobQueue?: JobQueue;
 }
 
 export class Honolus {
@@ -64,6 +76,7 @@ export class Honolus {
     public readonly route: SonolusRoutes;
     public readonly search: SonolusSearchRegistry;
     private readonly database?: SonolusDatabase;
+    private readonly jobQueue?: JobQueue;
 
     constructor(options: HonolusOptions = {}) {
         validateOptions(options);
@@ -71,7 +84,12 @@ export class Honolus {
 
         this.app = new Hono();
         this.database = options.database;
+        this.jobQueue = options.jobQueue;
+        this.app.onError((error, context) => respondError(context, error));
         this.app.use('*', request_id_middleware(), error_middleware());
+        if (options.observability) this.app.use('*', observability_middleware(options.observability));
+        if (options.rateLimit) this.app.use('*', rate_limit_middleware(options.rateLimit));
+        if (options.timeoutMs !== undefined) this.app.use('*', timeout_middleware(options.timeoutMs));
         this.app.get('/health/live', (context) => context.json({ status: 'ok', requestId: context.get('requestId') }));
         this.app.get('/health/ready', async (context) => {
             try {
@@ -112,6 +130,7 @@ export class Honolus {
 
     public async close(): Promise<void> {
         await this.database?.close();
+        await this.jobQueue?.close();
     }
 }
 
@@ -138,8 +157,10 @@ function registerAssetRoute(app: Hono, basePath: string, assets: SonolusAssetSto
         const hash = context.req.param('hash') ?? '';
         try {
             if (!(await assets.has(hash))) return context.notFound();
+            const etag = `"${hash}"`;
+            if (context.req.header('If-None-Match') === etag) return new Response(null, { status: 304, headers: { ETag: etag, 'Cache-Control': 'public, max-age=31536000, immutable' } });
             const stream = await assets.open(hash);
-            return new Response(stream, { headers: { 'Content-Type': 'application/octet-stream', 'Cache-Control': 'public, max-age=31536000, immutable' } });
+            return new Response(stream, { headers: { ETag: etag, 'Content-Type': 'application/octet-stream', 'Cache-Control': 'public, max-age=31536000, immutable', 'Surrogate-Control': 'public, max-age=31536000, immutable' } });
         } catch (error) {
             if (error instanceof Error && (error as NodeJS.ErrnoException).code === 'ENOENT') return context.notFound();
             return context.notFound();
