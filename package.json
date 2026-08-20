@@ -4,10 +4,14 @@
   "description": "",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "bin": {
+    "honolus": "dist/cli.js"
+  },
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "test": "npm run build && node --test tests/*.test.js && tsc -p tsconfig.test.json"
+    "test": "npm run build && node --test tests/*.test.js && tsc -p tsconfig.test.json",
+    "cli": "node dist/cli.js"
   },
   "keywords": [],
   "author": "",

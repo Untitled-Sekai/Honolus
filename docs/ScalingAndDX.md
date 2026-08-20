@@ -1,6 +1,6 @@
 # 大規模設計と DX のロードマップ
 
-> Phase 1・Phase 2 の基盤機能は実装済みです。SQL は PostgreSQL 互換の `SqlExecutor` を注入するアダプターとして提供し、Memory/JSON は開発・テスト用として引き続き利用できます。
+> Phase 1〜3 の基盤機能は実装済みです。SQL は PostgreSQL 互換の `SqlExecutor` を注入するアダプターとして提供し、Memory/JSON は開発・テスト用として引き続き利用できます。
 
 Honolus を、小規模な静的サーバーだけでなく、複数人・複数プロセス・大量データを扱うサーバー開発キットへ発展させるための設計方針をまとめます。
 
@@ -30,14 +30,16 @@ Honolus を、小規模な静的サーバーだけでなく、複数人・複数
 - rate limit、request timeout、JSON 構造化ログ、メトリクス、trace 契約
 - idempotency を持つ Memory job queue と pack import worker
 - asset の ETag、条件付き GET、CDN 向け immutable cache header
+- CLI による project/route generator、route manifest、最小 OpenAPI、DB migrate/seed
+- fixture/seed API と compatibility/deprecation API
 
 現在の実装を大規模用途へそのまま拡張する場合、特に次の制約があります。
 
 - JSON DB はプロセス内に全データを読み込み、書き込みごとにファイル全体を更新する
-- Memory/JSON のカーソルはオフセットベースで、データ更新が多い環境の安定したページングには向かない
-- SQL ドライバー、トランザクション、マイグレーション、接続プールは未提供
-- セッション、ユーザー、権限、レート制限の共有ストアがない
-- 非同期ジョブ、キャッシュ、分散ロック、ヘルスチェック、メトリクスの標準契約がない
+- Memory/JSON は keyset cursor に対応するが、production の共有更新ストアではない
+- SQL アダプターの契約は提供済みだが、具体的な PostgreSQL 接続プールは利用者または別パッケージが提供する
+- session/cache/lock/rate limit は契約と Memory 実装までで、production 用の Redis 等アダプターは別途必要
+- 非同期ジョブは Memory queue までで、Redis/DB queue の retry、dead-letter、分散 worker は今後の拡張
 - ハンドラーの依存性注入やアプリケーションのライフサイクル管理がない
 
 したがって、JSON DB の高速化だけではなく、実行モデルと運用モデルを拡張する必要があります。

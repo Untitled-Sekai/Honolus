@@ -13,6 +13,8 @@ import { z } from 'zod';
 import type { JobQueue } from './jobs';
 import type { Logger, Metrics, Tracer } from './runtime';
 import { respondError } from './error';
+import { createOpenApiDocument, createRouteManifest } from './manifest';
+import type { HonolusRouteManifest, OpenApiDocument } from './manifest';
 
 export { FileSonolusAssetStore, importSonolusPack, ScpArchive, directoryStaticMiddleware, scpStaticMiddleware } from './pack';
 export type {
@@ -26,6 +28,11 @@ export type {
 
 export { createSonolusDatabase } from './db';
 export { HonolusError, respondError } from './error';
+export { createOpenApiDocument, createRouteManifest } from './manifest';
+export type { HonolusRouteManifest, OpenApiDocument } from './manifest';
+export { assertCompatibility, warnDeprecated, HONOLUS_COMPATIBILITY_VERSION } from './compatibility';
+export type { DeprecationNotice } from './compatibility';
+export { migrateDatabase, readFixture, seedDatabase, writeFixture } from './fixtures';
 export { MemoryCacheStore, MemoryLockStore, MemoryMetrics, MemoryRateLimitStore, JsonConsoleLogger, NoopTracer } from './runtime';
 export { MemoryJobQueue, PACK_IMPORT_JOB, enqueuePackImport, registerPackImportWorker } from './jobs';
 export type { CacheStore, LockStore, Logger, Metrics, RateLimitStore, SessionStore, Span, Tracer } from './runtime';
@@ -77,6 +84,7 @@ export class Honolus {
     public readonly search: SonolusSearchRegistry;
     private readonly database?: SonolusDatabase;
     private readonly jobQueue?: JobQueue;
+    private readonly routeRegistry: RouteRegistry;
 
     constructor(options: HonolusOptions = {}) {
         validateOptions(options);
@@ -119,13 +127,22 @@ export class Honolus {
             const packageEntry = createRequire(__filename).resolve(options.pack.packageName);
             this.app.use(`${basePath}/*`, directoryStaticMiddleware(join(dirname(packageEntry), 'static'), basePath));
         }
-        this.route = new SonolusRoutes(new RouteRegistry(this.app, basePath));
+        this.routeRegistry = new RouteRegistry(this.app, basePath);
+        this.route = new SonolusRoutes(this.routeRegistry);
         if (options.database) registerDatabaseRoutes(this.route, options.database);
         if (options.assets) registerAssetRoute(this.app, basePath, options.assets);
     }
 
     public getApp(): Hono {
         return this.app;
+    }
+
+    public getRouteManifest(): HonolusRouteManifest {
+        return createRouteManifest(this.routeRegistry.getRoutes());
+    }
+
+    public getOpenApiDocument(options: { title?: string; version?: string } = {}): OpenApiDocument {
+        return createOpenApiDocument(this.routeRegistry.getRoutes(), options);
     }
 
     public async close(): Promise<void> {

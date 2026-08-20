@@ -17,6 +17,11 @@ export interface RouteDefinition<
     readonly respond?: (context: Context, value: TResponse) => Response;
 }
 
+export type RegisteredRoute = {
+    method: RouteMethod;
+    path: string;
+};
+
 export interface RouteHandler<
     TResponse extends object,
     TArguments extends readonly unknown[] = readonly [],
@@ -40,6 +45,7 @@ export type RouteDecorator<
 /** Registers class-based handlers on the Hono application. */
 export class RouteRegistry {
     private readonly registeredRoutes = new Set<string>();
+    private readonly routes: RegisteredRoute[] = [];
 
     constructor(
         private readonly app: Hono,
@@ -74,6 +80,7 @@ export class RouteRegistry {
             throw new Error(`A handler is already registered for ${routeId}`);
         }
         this.registeredRoutes.add(routeId);
+        this.routes.push({ method: definition.method, path });
 
         this.app.on(definition.method, path, async (context) => {
             const Handler = getHandler();
@@ -98,5 +105,9 @@ export class RouteRegistry {
         });
 
         return routeId;
+    }
+
+    public getRoutes(): RegisteredRoute[] {
+        return this.routes.map((route) => ({ ...route }));
     }
 }
