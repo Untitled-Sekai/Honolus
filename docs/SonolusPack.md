@@ -4,7 +4,7 @@
 
 結論として、`@sonolus/free-pack` の `pack` を正規のインポート元として扱い、`.scp` は配布・静的配信用のアーカイブとして扱います。両方を受け付けられるようにしますが、`.scp` をそのままデータベースの正規データにする設計にはしません。
 
-現在の実装状況では、directory source の import、filesystem asset store、SHA-1 検証、冪等 import、競合処理までを実装済みです。`.scp` の static mount と ZIP source は、同じ source 契約へ接続する次の実装段階です。
+現在の実装状況では、directory source の import、filesystem asset store、SHA-1 検証、冪等 import、競合処理、`.scp` の static mount と repository asset 配信までを実装済みです。`.scp` から `SonolusDatabase` へ情報を復元する strict import は、static response と database model の差があるため別段階です。
 
 ## なぜ `pack` と `.scp` を分けるのか
 
@@ -200,9 +200,8 @@ ZIP entry を逐次 stream で読む実装では、展開先を作らずに同�
 3. `src/pack/importer.ts` で database と asset store へ冪等に取り込む。
 4. `src/pack/file-assets.ts` で filesystem asset store を実装する。
 5. `src/api/server/item` と repository endpoint を database / asset store に接続する。
-6. ZIP reader を追加し、`.scp` static mount を実装する。
-7. `@sonolus/free-pack` の `packPath` / `staticPath` を利用する npm source を追加する。
-8. 必要になった時点で strict な static-to-database converter を追加する。
+6. `@sonolus/free-pack` の `packPath` / `staticPath` を利用する npm source を追加する。
+7. 必要になった時点で strict な static-to-database converter を追加する。
 
 ## 採用方針
 

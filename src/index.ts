@@ -3,7 +3,9 @@ import { RouteRegistry, SonolusRoutes } from './api';
 import { sonolusMiddleware, version_middleware } from './middleware';
 import { SonolusSearchRegistry } from './search';
 
-export { FileSonolusAssetStore, importSonolusPack } from './pack';
+import { ScpArchive, scpStaticMiddleware } from './pack';
+
+export { FileSonolusAssetStore, importSonolusPack, ScpArchive, scpStaticMiddleware } from './pack';
 export type {
     ImportSonolusPackOptions,
     SonolusAssetStore,
@@ -38,6 +40,12 @@ export interface HonolusOptions {
     basePath?: `/${string}`;
     /** Value returned in the Sonolus-Version response header. */
     version?: string;
+    /** Mount a read-only .scp static pack as a fallback for Sonolus routes. */
+    pack?: {
+        type: 'scp';
+        path: string;
+        mode?: 'static';
+    };
 }
 
 export class Honolus {
@@ -58,6 +66,10 @@ export class Honolus {
             ),
             version_middleware(),
         );
+        if (options.pack?.type === 'scp') {
+            const archive = ScpArchive.fromFile(options.pack.path);
+            this.app.use(`${basePath}/*`, scpStaticMiddleware(archive, basePath));
+        }
         this.route = new SonolusRoutes(new RouteRegistry(this.app, basePath));
     }
 
