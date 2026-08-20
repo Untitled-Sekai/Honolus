@@ -14,12 +14,16 @@ import type {
     SearchForms,
     SearchValue,
 } from './search';
+import type { SonolusAssetStore } from './pack';
+import type { SonolusDatabase } from './db';
 
 export class SonolusContext {
     constructor(
         private readonly context: Context,
         private readonly sonolus_version: string = '1.1.3',
         private readonly registeredSearch?: RegisteredSearch,
+        public readonly database?: SonolusDatabase,
+        public readonly assets?: SonolusAssetStore,
     ) {}
 
     public get version(): string {

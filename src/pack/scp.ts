@@ -1,4 +1,6 @@
 import { readFileSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { inflateRawSync } from 'node:zlib';
 import type { Context, MiddlewareHandler, Next } from 'hono';
 
@@ -92,7 +94,12 @@ export function scpStaticMiddleware(archive: ScpArchive, basePath: string): Midd
     return async (context: Context, next: Next) => {
         if (context.req.method !== 'GET' && context.req.method !== 'HEAD') return next();
         const relativePath = basePath ? context.req.path.slice(basePath.length) : context.req.path;
-        const entryPath = `sonolus${relativePath}`;
+        let entryPath: string;
+        try {
+            entryPath = normalizeEntryPath(`sonolus${relativePath}`);
+        } catch {
+            return next();
+        }
         if (!archive.has(entryPath)) return next();
         const data = archive.read(entryPath)!;
         const headers = new Headers({
@@ -101,6 +108,27 @@ export function scpStaticMiddleware(archive: ScpArchive, basePath: string): Midd
             'Cache-Control': 'public, max-age=31536000, immutable',
         });
         return new Response(context.req.method === 'HEAD' ? undefined : Buffer.from(data), { status: 200, headers });
+    };
+}
+
+export function directoryStaticMiddleware(directory: string, basePath: string): MiddlewareHandler {
+    return async (context: Context, next: Next) => {
+        if (context.req.method !== 'GET' && context.req.method !== 'HEAD') return next();
+        const relativePath = basePath ? context.req.path.slice(basePath.length) : context.req.path;
+        let entryPath: string;
+        try {
+            entryPath = normalizeEntryPath(`sonolus${relativePath}`);
+        } catch {
+            return next();
+        }
+        try {
+            const data = await readFile(join(directory, ...entryPath.split('/')));
+            const headers = new Headers({ 'Content-Type': contentType(entryPath), 'Content-Length': String(data.byteLength), 'Cache-Control': 'public, max-age=31536000, immutable' });
+            return new Response(context.req.method === 'HEAD' ? undefined : data, { status: 200, headers });
+        } catch (error) {
+            if (isNotFound(error)) return next();
+            throw error;
+        }
     };
 }
 
@@ -136,4 +164,8 @@ function readUInt32(data: Uint8Array, offset: number): number {
 function contentType(path: string): string {
     if (path.endsWith('/info') || path.endsWith('/list') || path.endsWith('/package')) return 'application/json; charset=utf-8';
     return 'application/octet-stream';
+}
+
+function isNotFound(error: unknown): boolean {
+    return typeof error === 'object' && error !== null && 'code' in error && error.code === 'ENOENT';
 }

@@ -87,7 +87,13 @@ export class RouteRegistry {
             const arguments_ = definition.arguments
                 ? await definition.arguments(context)
                 : [] as unknown as TArguments;
-            const value = await new Handler().handle(context.sonolus, ...arguments_);
+            let value: TResponse;
+            try {
+                value = await new Handler().handle(context.sonolus, ...arguments_);
+            } catch (error) {
+                if (error instanceof Error && error.name === 'NotFoundError') return context.notFound();
+                throw error;
+            }
             return definition.respond?.(context, value) ?? context.json(value);
         });
 

@@ -1,14 +1,16 @@
 import { readDirectoryPack } from './directory';
+import { resolve } from 'node:path';
 import type { SonolusPackImportResult, ImportSonolusPackOptions, SonolusItemType } from './type';
 import type { SonolusItem } from '../db';
 import { createHash } from 'node:crypto';
 
 export async function importSonolusPack(options: ImportSonolusPackOptions): Promise<SonolusPackImportResult> {
-    if (options.source.type !== 'directory') {
-        throw new Error(`Sonolus pack source "${options.source.type}" is not implemented yet; use a directory pack source`);
-    }
-
-    const pack = await readDirectoryPack(options.source.path);
+    const sourcePath = options.source.type === 'directory'
+        ? options.source.path
+        : options.source.type === 'npm'
+            ? await npmPackPath(options.source.packageName)
+            : (() => { throw new Error(`Sonolus pack source "${options.source.type}" is not implemented yet`); })();
+    const pack = await readDirectoryPack(sourcePath);
     const conflict = options.conflict ?? 'error';
     const publicRepositoryPath = normalizeRepositoryPath(options.publicRepositoryPath ?? '/sonolus/repository');
     let importedItems = 0;
@@ -57,7 +59,7 @@ export async function importSonolusPack(options: ImportSonolusPackOptions): Prom
 
     return {
         manifest: {
-            source: options.source.path,
+            source: sourcePath,
             importedAt: Date.now(),
             itemCounts,
             repositoryHashes: pack.assets.map((asset) => asset.hash),
@@ -67,6 +69,12 @@ export async function importSonolusPack(options: ImportSonolusPackOptions): Prom
         importedAssets,
         skippedAssets,
     };
+}
+
+async function npmPackPath(packageName: string): Promise<string> {
+    const packageModule = await import(packageName) as { packPath?: unknown };
+    if (typeof packageModule.packPath !== 'string') throw new Error(`npm pack source does not export packPath: ${packageName}`);
+    return resolve(packageModule.packPath);
 }
 
 function resourceHashes(value: unknown): string[] {
