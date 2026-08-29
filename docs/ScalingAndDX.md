@@ -2,6 +2,18 @@
 
 > Phase 1〜3 の基盤機能は実装済みです。SQL は PostgreSQL 互換の `SqlExecutor` を注入するアダプターとして提供し、Memory/JSON は開発・テスト用として引き続き利用できます。
 
+## 実装済みの本番スケーリング機能
+
+- `PostgresExecutor` による接続プール、transaction、statement/lock timeout、DBメトリクス
+- title、author、rating、time、tag の検索列と一覧用indexを追加する後方互換migration
+- 検索条件に結び付いたversion付きcursorと、`cursorSecret`指定時のHMAC署名
+- `includeTotalCount: false` による高価な一覧COUNTの省略
+- asset先行検証・原子的保存と、単一DB transactionによるpack item import
+- PostgreSQL永続job queueのretry、指数backoff、dead状態、lease、heartbeat、`SKIP LOCKED`
+- timeout時の`AbortSignal`、明示的なproxy信頼、route-patternメトリクス、拡張readiness
+
+PostgreSQLではアプリケーションが選んだ `pg.Pool` 互換オブジェクトを `PostgresExecutor` に渡します。本番公開するcursorには十分長いランダムな `cursorSecret` を必ず指定してください。
+
 Honolus を、小規模な静的サーバーだけでなく、複数人・複数プロセス・大量データを扱うサーバー開発キットへ発展させるための設計方針をまとめます。
 
 この文書でいう「大規模」は、単に 1 台のサーバーを高性能にすることではありません。次の条件を満たし、機能追加や障害対応を続けられる状態を指します。

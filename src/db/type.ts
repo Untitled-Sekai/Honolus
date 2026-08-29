@@ -56,12 +56,14 @@ export type SonolusQuery<T extends SonolusItemType = SonolusItemType> = {
     tags?: string[];
     orderBy?: SonolusOrder<T>[];
     page?: Page;
+    /** Skip the potentially expensive COUNT query when the caller only needs cursor paging. */
+    includeTotalCount?: boolean;
 };
 
 export type PageResult<T> = {
     items: T[];
     nextCursor?: string;
-    totalCount: number;
+    totalCount?: number;
 };
 
 export interface SonolusRepository<T extends SonolusItemType> {

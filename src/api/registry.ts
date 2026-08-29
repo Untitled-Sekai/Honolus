@@ -83,6 +83,7 @@ export class RouteRegistry {
         this.routes.push({ method: definition.method, path });
 
         this.app.on(definition.method, path, async (context) => {
+            context.set('observabilityRoute', path);
             const Handler = getHandler();
             if (!Handler) return context.notFound();
 

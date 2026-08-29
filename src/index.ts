@@ -34,9 +34,9 @@ export { assertCompatibility, warnDeprecated, HONOLUS_COMPATIBILITY_VERSION } fr
 export type { DeprecationNotice } from './compatibility';
 export { migrateDatabase, readFixture, seedDatabase, writeFixture } from './fixtures';
 export { MemoryCacheStore, MemoryLockStore, MemoryMetrics, MemoryRateLimitStore, JsonConsoleLogger, NoopTracer } from './runtime';
-export { MemoryJobQueue, PACK_IMPORT_JOB, enqueuePackImport, registerPackImportWorker } from './jobs';
+export { MemoryJobQueue, PostgresJobQueue, PACK_IMPORT_JOB, enqueuePackImport, registerPackImportWorker } from './jobs';
 export type { CacheStore, LockStore, Logger, Metrics, RateLimitStore, SessionStore, Span, Tracer } from './runtime';
-export type { JobQueue, JobRecord, JobHandler, JobState } from './jobs';
+export type { EnqueueOptions, JobQueue, JobRecord, JobHandler, JobState, PostgresJobQueueOptions } from './jobs';
 export type { RateLimitOptions, ObservabilityOptions } from './middleware';
 export type { HonolusErrorCode } from './error';
 export type {
@@ -58,6 +58,8 @@ export type {
     SonolusWhere,
 } from './db';
 export type { SqlDatabaseOptions, SqlExecutor, SqlRow } from './db';
+export { PostgresExecutor } from './db';
+export type { PostgresExecutorOptions, PostgresPoolClientLike, PostgresPoolLike } from './db';
 
 export interface HonolusOptions {
     /** Prefix used for every Sonolus API endpoint. */
@@ -76,6 +78,7 @@ export interface HonolusOptions {
     rateLimit?: import('./middleware').RateLimitOptions;
     observability?: { logger?: Logger; metrics?: Metrics; tracer?: Tracer };
     jobQueue?: JobQueue;
+    readiness?: Array<{ name: string; ready(): Promise<void> }>;
 }
 
 export class Honolus {
@@ -100,8 +103,11 @@ export class Honolus {
         if (options.timeoutMs !== undefined) this.app.use('*', timeout_middleware(options.timeoutMs));
         this.app.get('/health/live', (context) => context.json({ status: 'ok', requestId: context.get('requestId') }));
         this.app.get('/health/ready', async (context) => {
+            context.set('observabilityRoute', '/health/ready');
             try {
                 await this.database?.ready?.();
+                await this.jobQueue?.ready?.();
+                await Promise.all((options.readiness ?? []).map((dependency) => dependency.ready()));
                 return context.json({ status: 'ok', requestId: context.get('requestId') });
             } catch {
                 return context.json({ status: 'not_ready', requestId: context.get('requestId') }, 503);
@@ -146,8 +152,8 @@ export class Honolus {
     }
 
     public async close(): Promise<void> {
-        await this.database?.close();
         await this.jobQueue?.close();
+        await this.database?.close();
     }
 }
 

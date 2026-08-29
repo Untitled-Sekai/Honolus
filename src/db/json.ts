@@ -52,6 +52,11 @@ export class JsonSonolusDatabase implements SonolusDatabase {
         return deleted;
     }
 
+    public async count<T extends SonolusItemType>(type: T, query?: Omit<SonolusQuery<T>, 'page' | 'orderBy'>): Promise<number> {
+        await this.initialized;
+        return this.memory.repository(type).count(query);
+    }
+
     private async load(seed: JsonDatabaseOptions['seed']): Promise<void> {
         try {
             const document = JSON.parse(await readFile(this.options.path, 'utf8')) as JsonDocument;
@@ -97,7 +102,7 @@ class JsonSonolusRepository<T extends SonolusItemType> implements SonolusReposit
     public list(query?: SonolusQuery<T>) { return this.database.list(this.type, query); }
     public put(item: SonolusItemMapFor<T>) { return this.database.put(this.type, item); }
     public delete(name: string) { return this.database.delete(this.type, name); }
-    public async count(query?: Omit<SonolusQuery<T>, 'page' | 'orderBy'>) { return (await this.list(query)).totalCount; }
+    public count(query?: Omit<SonolusQuery<T>, 'page' | 'orderBy'>) { return this.database.count(this.type, query); }
 }
 
 import type { SonolusItemMap } from './type';

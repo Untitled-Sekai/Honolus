@@ -4,6 +4,8 @@ import { SqlSonolusDatabase } from './sql';
 import type { SonolusDatabase, SonolusDatabaseOptions } from './type';
 export { SqlSonolusDatabase } from './sql';
 export type { SqlDatabaseOptions, SqlExecutor, SqlRow } from './sql';
+export { PostgresExecutor } from './postgres';
+export type { PostgresExecutorOptions, PostgresPoolClientLike, PostgresPoolLike } from './postgres';
 
 export function createSonolusDatabase(options: SonolusDatabaseOptions): SonolusDatabase {
     if (options.driver === 'memory') return new MemorySonolusDatabase(options.seed);

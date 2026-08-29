@@ -64,7 +64,7 @@ class MemorySonolusRepository<T extends SonolusItemType> implements SonolusRepos
         const last = items[items.length - 1];
         return {
             items,
-            totalCount: filtered.length,
+            ...(query.includeTotalCount === false ? {} : { totalCount: filtered.length }),
             ...(last && (start < 0 ? 0 : start) + items.length < filtered.length ? { nextCursor: encodeCursor(last, order) } : {}),
         };
     }
@@ -79,7 +79,7 @@ class MemorySonolusRepository<T extends SonolusItemType> implements SonolusRepos
     }
 
     public async count(query: Omit<SonolusQuery<T>, 'page' | 'orderBy'> = {}): Promise<number> {
-        return (await this.list(query)).totalCount;
+        return this.database.values(this.type).filter((item) => matches(item, query)).length;
     }
 }
 

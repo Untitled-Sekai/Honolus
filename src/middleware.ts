@@ -8,7 +8,7 @@ import { respondError } from './error';
 import { HonolusError } from './error';
 import type { Logger, Metrics, RateLimitStore, Tracer } from './runtime';
 
-export type RateLimitOptions = { limit: number; windowMs: number; store: RateLimitStore; key?: (context: Context) => string };
+export type RateLimitOptions = { limit: number; windowMs: number; store: RateLimitStore; key?: (context: Context) => string; trustProxy?: boolean };
 export type ObservabilityOptions = { logger?: Logger; metrics?: Metrics; tracer?: Tracer };
 
 export const sonolusMiddleware = (
@@ -57,13 +57,15 @@ export const request_id_middleware = () => async (c: Context, next: Next) => {
     await next();
 };
 
-export const timeout_middleware = (timeoutMs: number) => async (_c: Context, next: Next) => {
+export const timeout_middleware = (timeoutMs: number) => async (c: Context, next: Next) => {
     if (!Number.isInteger(timeoutMs) || timeoutMs < 1) throw new RangeError('timeoutMs must be a positive integer');
     let timer: ReturnType<typeof setTimeout> | undefined;
+    const controller = new AbortController();
+    c.set('requestAbortSignal', controller.signal);
     try {
         await Promise.race([
             next(),
-            new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new HonolusError('INTERNAL_ERROR', 'Request timed out', 504)), timeoutMs); }),
+            new Promise<never>((_, reject) => { timer = setTimeout(() => { controller.abort(); reject(new HonolusError('INTERNAL_ERROR', 'Request timed out', 504)); }, timeoutMs); }),
         ]);
     } finally {
         if (timer) clearTimeout(timer);
@@ -72,7 +74,8 @@ export const timeout_middleware = (timeoutMs: number) => async (_c: Context, nex
 
 export const rate_limit_middleware = (options: RateLimitOptions) => async (c: Context, next: Next) => {
     if (!Number.isInteger(options.limit) || options.limit < 1 || options.windowMs < 1) throw new RangeError('Invalid rate limit options');
-    const key = options.key?.(c) ?? c.req.header('Sonolus-Session') ?? c.req.header('X-Forwarded-For')?.split(',')[0].trim() ?? 'anonymous';
+    const forwarded = options.trustProxy ? c.req.header('X-Forwarded-For')?.split(',')[0].trim() : undefined;
+    const key = options.key?.(c) ?? c.req.header('Sonolus-Session') ?? forwarded ?? 'anonymous';
     const result = await options.store.increment(key, options.windowMs);
     c.header('X-RateLimit-Limit', String(options.limit));
     c.header('X-RateLimit-Remaining', String(Math.max(0, options.limit - result.count)));
@@ -96,17 +99,22 @@ export const observability_middleware = (options: ObservabilityOptions = {}) => 
     } finally {
         const duration = performance.now() - started;
         const status = errorStatus ?? c.res.status;
-        const labels = { method: c.req.method, route: c.req.path, status: String(status) };
+        const route = c.get('observabilityRoute') ?? unmatchedRoute(c.req.path);
+        const labels = { method: c.req.method, route, status: String(status) };
         options.metrics?.increment('http.requests.total', 1, labels);
         options.metrics?.observe('http.request.duration_ms', duration, labels);
         span?.setAttribute('http.status_code', status);
         span?.end();
-        options.logger?.log(status >= 500 ? 'error' : status >= 400 ? 'warn' : 'info', 'http.request', { requestId: c.get('requestId'), method: c.req.method, route: c.req.path, status, durationMs: Math.round(duration * 100) / 100 });
+        options.logger?.log(status >= 500 ? 'error' : status >= 400 ? 'warn' : 'info', 'http.request', { requestId: c.get('requestId'), method: c.req.method, route, status, durationMs: Math.round(duration * 100) / 100 });
     }
 };
 
 declare module 'hono' {
     interface ContextVariableMap {
         requestId: string;
+        requestAbortSignal: AbortSignal;
+        observabilityRoute: string;
     }
 }
+
+function unmatchedRoute(path: string): string { return path.split('/').map((part) => /^[a-f0-9]{16,}$/i.test(part) ? ':id' : part).join('/'); }

@@ -26,25 +26,8 @@ export async function importSonolusPack(options: ImportSonolusPackOptions): Prom
         }
     }
 
-    for (const { type, item: normalized } of normalizedItems) {
-        const repository = options.database.repository(type);
-        const existing = await repository.get(normalized.name);
-        if (existing) {
-            if (sameJson(existing, normalized)) {
-                skippedItems++;
-                continue;
-            }
-            if (conflict === 'error') throw new Error(`Item conflict for ${type}/${normalized.name}`);
-            if (conflict === 'skip') {
-                skippedItems++;
-                continue;
-            }
-        }
-        await repository.put(normalized as never);
-        importedItems++;
-        itemCounts[type] = (itemCounts[type] ?? 0) + 1;
-    }
-
+    // Assets are content-addressed and each store implementation must publish put atomically.
+    // Save them before the DB commit so committed items never reference missing content.
     for (const asset of pack.assets) {
         if (await options.assets.has(asset.hash)) {
             const existing = await readAsset(options.assets, asset.hash);
@@ -56,6 +39,23 @@ export async function importSonolusPack(options: ImportSonolusPackOptions): Prom
         await options.assets.put(asset.hash, asset.data);
         importedAssets++;
     }
+
+    const writeItems = async (database: ImportSonolusPackOptions['database']) => {
+        for (const { type, item: normalized } of normalizedItems) {
+            const repository = database.repository(type);
+            const existing = await repository.get(normalized.name);
+            if (existing) {
+                if (sameJson(existing, normalized)) { skippedItems++; continue; }
+                if (conflict === 'error') throw new Error(`Item conflict for ${type}/${normalized.name}`);
+                if (conflict === 'skip') { skippedItems++; continue; }
+            }
+            await repository.put(normalized as never);
+            importedItems++;
+            itemCounts[type] = (itemCounts[type] ?? 0) + 1;
+        }
+    };
+    if (options.database.transaction) await options.database.transaction(writeItems);
+    else await writeItems(options.database);
 
     return {
         manifest: {

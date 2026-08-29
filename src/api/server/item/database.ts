@@ -24,7 +24,7 @@ export function createDatabaseHandlers(type: SonolusItemType) {
                 });
                 return {
                     title: paths[type],
-                    pageCount: Math.ceil(result.totalCount / context.pagination.limit),
+                    pageCount: Math.ceil((result.totalCount ?? result.items.length) / context.pagination.limit),
                     ...(result.nextCursor ? { cursor: result.nextCursor } : {}),
                     items: await Promise.all(result.items.map((item) => toServerItem(type, item, context))),
                 };
