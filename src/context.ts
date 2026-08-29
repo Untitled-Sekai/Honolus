@@ -152,6 +152,11 @@ export class SonolusContext {
         return this.context.get('requestId') as string | undefined;
     }
 
+    /** Aborted when the configured request timeout expires. */
+    public get abortSignal(): AbortSignal | undefined {
+        return this.context.get('requestAbortSignal') as AbortSignal | undefined;
+    }
+
     public utils = new SonolusUtils();
 }
 

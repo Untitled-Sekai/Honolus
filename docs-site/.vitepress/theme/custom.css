@@ -1,0 +1,14 @@
+:root {
+    --vp-c-brand-1: #7257ff;
+    --vp-c-brand-2: #5d43e8;
+    --vp-c-brand-3: #4930ce;
+    --vp-c-brand-soft: rgba(114, 87, 255, 0.14);
+    --vp-home-hero-name-color: transparent;
+    --vp-home-hero-name-background: linear-gradient(120deg, #8a6cff 20%, #31c5d7 80%);
+    --vp-home-hero-image-background-image: radial-gradient(circle, rgba(114, 87, 255, .35), transparent 65%);
+    --vp-home-hero-image-filter: blur(52px);
+}
+
+.VPHomeHero .image-src { width: 250px; height: 250px; }
+.vp-doc div[class*='language-'] { border: 1px solid var(--vp-c-divider); }
+.vp-doc table { display: table; width: 100%; }
