@@ -1,5 +1,5 @@
 {
-  "name": "honolus",
+  "name": "@untitledsekai/honolus",
   "version": "1.0.0",
   "description": "A type-safe Sonolus server framework built on Hono",
   "main": "dist/index.js",
