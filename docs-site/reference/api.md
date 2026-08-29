@@ -6,6 +6,10 @@
 - `SonolusContext`
 - `createRouteManifest`
 - `createOpenApiDocument`
+- `defineHandler`
+- `createTestContext`
+- `SessionManager`
+- `requireSession` / `requireRole` / `requirePermission` / `requirePolicy`
 
 ## Database
 
@@ -39,6 +43,11 @@
 - `JsonConsoleLogger`
 - `MemoryMetrics`
 - `NoopTracer`
+- `RedisCacheStore` / `RedisSessionStore`
+- `RedisRateLimitStore` / `RedisLockStore`
+- `TransactionalOutbox` / `OutboxDispatcher`
+- `S3SonolusAssetStore`
+- `generateLoadSeed` / `benchmarkRepository`
 
 公開型はpackage rootの`honolus`からimportしてください。`src/`以下の内部パスを直接参照すると、minor releaseで壊れる可能性があります。
 

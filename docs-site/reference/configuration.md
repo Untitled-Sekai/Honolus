@@ -16,6 +16,7 @@ const sonolus = new Honolus(options)
 | `observability` | logger / metrics / tracer | 観測性adapter |
 | `jobQueue` | `JobQueue` | lifecycleとreadinessへ接続するqueue |
 | `readiness` | dependency[] | 独自の依存サービスcheck |
+| `auth` | `AuthOptions` | 共有session、TTL、監査logger |
 
 ## Lifecycle
 
@@ -25,6 +26,8 @@ sonolus.getRouteManifest()   // 登録route一覧
 sonolus.getOpenApiDocument() // OpenAPI 3.0.3
 await sonolus.close()        // queueとDBを終了
 ```
+
+`await Honolus.create(options)`を使うと、全依存のreadinessが成功してからinstanceを受け取れます。`close({ gracePeriodMs })`は新規requestを拒否し、処理中requestを期限まで待機します。
 
 ## Context
 

@@ -7,6 +7,7 @@ import { randomUUID } from 'node:crypto';
 import { respondError } from './error';
 import { HonolusError } from './error';
 import type { Logger, Metrics, RateLimitStore, Tracer } from './runtime';
+import type { AuthSession, AuthUser, SessionManager } from './auth';
 
 export type RateLimitOptions = { limit: number; windowMs: number; store: RateLimitStore; key?: (context: Context) => string; trustProxy?: boolean };
 export type ObservabilityOptions = { logger?: Logger; metrics?: Metrics; tracer?: Tracer };
@@ -54,6 +55,15 @@ export const request_id_middleware = () => async (c: Context, next: Next) => {
     const requestId = c.req.header('X-Request-Id') || randomUUID();
     c.set('requestId', requestId);
     c.header('X-Request-Id', requestId);
+    await next();
+};
+
+export const session_middleware = (sessions: SessionManager) => async (c: Context, next: Next) => {
+    const id = c.req.header('Sonolus-Session');
+    if (id) {
+        const session = await sessions.resolve(id);
+        if (session) c.set('authSession', session);
+    }
     await next();
 };
 
@@ -114,6 +124,7 @@ declare module 'hono' {
         requestId: string;
         requestAbortSignal: AbortSignal;
         observabilityRoute: string;
+        authSession: AuthSession<AuthUser>;
     }
 }
 

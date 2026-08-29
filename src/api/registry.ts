@@ -40,7 +40,31 @@ export type RouteHandlerConstructor<
 export type RouteDecorator<
     TResponse extends object,
     TArguments extends readonly unknown[] = readonly [],
-> = <THandler extends RouteHandlerConstructor<TResponse, TArguments>>(handler: THandler) => THandler;
+> = {
+    <THandler extends RouteHandlerConstructor<TResponse, TArguments>>(handler: THandler): THandler;
+    /** Returns the same decorator with additional policy/middleware hooks. */
+    use(...hooks: readonly RouteHook[]): RouteDecorator<TResponse, TArguments>;
+};
+
+export type HandlerDependencies<TDependencies, TArguments extends readonly unknown[]> = TDependencies | ((context: SonolusContext, ...arguments_: TArguments) => TDependencies | Promise<TDependencies>);
+export type FunctionHandlerOptions<TResponse extends object, TArguments extends readonly unknown[], TDependencies> = {
+    dependencies: HandlerDependencies<TDependencies, TArguments>;
+    handle(input: { context: SonolusContext; dependencies: TDependencies; arguments: TArguments }): TResponse | Promise<TResponse>;
+};
+
+/** Creates a decorator-compatible handler while keeping dependencies explicit and testable. */
+export function defineHandler<TResponse extends object, TArguments extends readonly unknown[] = readonly [], TDependencies = Record<string, never>>(
+    options: FunctionHandlerOptions<TResponse, TArguments, TDependencies>,
+): RouteHandlerConstructor<TResponse, TArguments> {
+    return class {
+        public async handle(context: SonolusContext, ...arguments_: TArguments): Promise<TResponse> {
+            const dependencies = typeof options.dependencies === 'function'
+                ? await (options.dependencies as (context: SonolusContext, ...arguments_: TArguments) => TDependencies | Promise<TDependencies>)(context, ...arguments_)
+                : options.dependencies;
+            return options.handle({ context, dependencies, arguments: arguments_ });
+        }
+    };
+}
 
 /** Registers class-based handlers on the Hono application. */
 export class RouteRegistry {
@@ -56,9 +80,10 @@ export class RouteRegistry {
         definition: RouteDefinition<TResponse, TArguments>,
     ): RouteDecorator<TResponse, TArguments> {
         let RegisteredHandler: RouteHandlerConstructor<TResponse, TArguments> | undefined;
-        const routeId = this.register(definition, () => RegisteredHandler);
+        const additionalHooks: RouteHook[] = [];
+        const routeId = this.register(definition, () => RegisteredHandler, additionalHooks);
 
-        return <THandler extends RouteHandlerConstructor<TResponse, TArguments>>(
+        const decorator = <THandler extends RouteHandlerConstructor<TResponse, TArguments>>(
             Handler: THandler,
         ): THandler => {
             if (RegisteredHandler) {
@@ -67,11 +92,14 @@ export class RouteRegistry {
             RegisteredHandler = Handler;
             return Handler;
         };
+        decorator.use = (...hooks: readonly RouteHook[]) => { additionalHooks.push(...hooks); return decorator; };
+        return decorator;
     }
 
     private register<TResponse extends object, TArguments extends readonly unknown[]>(
         definition: RouteDefinition<TResponse, TArguments>,
         getHandler: () => RouteHandlerConstructor<TResponse, TArguments> | undefined,
+        additionalHooks: RouteHook[],
     ): string {
         const path = `${this.basePath}${definition.path}`;
         const routeId = `${definition.method} ${path}`;
@@ -87,7 +115,7 @@ export class RouteRegistry {
             const Handler = getHandler();
             if (!Handler) return context.notFound();
 
-            for (const hook of definition.before ?? []) {
+            for (const hook of [...(definition.before ?? []), ...additionalHooks]) {
                 const response = await hook(context);
                 if (response instanceof Response) return response;
             }

@@ -16,6 +16,7 @@ import type {
 } from './search';
 import type { SonolusAssetStore } from './pack';
 import type { SonolusDatabase } from './db';
+import type { AuthSession, AuthUser } from './auth';
 
 export class SonolusContext {
     constructor(
@@ -151,6 +152,9 @@ export class SonolusContext {
     public get requestId(): string | undefined {
         return this.context.get('requestId') as string | undefined;
     }
+
+    public get authSession(): AuthSession | undefined { return this.context.get('authSession') as AuthSession | undefined; }
+    public get user(): AuthUser | undefined { return this.authSession?.user; }
 
     /** Aborted when the configured request timeout expires. */
     public get abortSignal(): AbortSignal | undefined {

@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { RouteRegistry, SonolusRoutes } from './api';
-import { error_middleware, observability_middleware, rate_limit_middleware, request_id_middleware, sonolusMiddleware, timeout_middleware, version_middleware } from './middleware';
+import { error_middleware, observability_middleware, rate_limit_middleware, request_id_middleware, session_middleware, sonolusMiddleware, timeout_middleware, version_middleware } from './middleware';
 import { SonolusSearchRegistry } from './search';
 
 import { ScpArchive, directoryStaticMiddleware, scpStaticMiddleware } from './pack';
@@ -15,8 +15,10 @@ import type { Logger, Metrics, Tracer } from './runtime';
 import { respondError } from './error';
 import { createOpenApiDocument, createRouteManifest } from './manifest';
 import type { HonolusRouteManifest, OpenApiDocument } from './manifest';
+import { SessionManager } from './auth';
+import type { AuthOptions } from './auth';
 
-export { FileSonolusAssetStore, importSonolusPack, ScpArchive, directoryStaticMiddleware, scpStaticMiddleware } from './pack';
+export { FileSonolusAssetStore, S3SonolusAssetStore, importSonolusPack, ScpArchive, directoryStaticMiddleware, scpStaticMiddleware } from './pack';
 export type {
     ImportSonolusPackOptions,
     SonolusAssetStore,
@@ -24,6 +26,8 @@ export type {
     SonolusPackImportResult,
     SonolusPackManifest,
     SonolusPackSource,
+    S3AssetStoreOptions,
+    S3ClientLike,
 } from './pack';
 
 export { createSonolusDatabase } from './db';
@@ -60,6 +64,13 @@ export type {
 export type { SqlDatabaseOptions, SqlExecutor, SqlRow } from './db';
 export { PostgresExecutor } from './db';
 export type { PostgresExecutorOptions, PostgresPoolClientLike, PostgresPoolLike } from './db';
+export { SessionManager, requirePermission, requirePolicy, requireRole, requireSession } from './auth';
+export type { AuthOptions, AuthSession, AuthUser, GuardOptions, Policy } from './auth';
+export { RedisCacheStore, RedisLockStore, RedisRateLimitStore, RedisSessionStore } from './redis';
+export type { RedisClientLike, RedisStoreOptions } from './redis';
+export { OutboxDispatcher, TransactionalOutbox } from './outbox';
+export type { OutboxDispatcherOptions, OutboxEvent, OutboxWriter, TransactionalOutboxOptions } from './outbox';
+export { benchmarkRepository, FaultInjectingSqlExecutor, generateLoadSeed } from './load';
 
 export interface HonolusOptions {
     /** Prefix used for every Sonolus API endpoint. */
@@ -79,6 +90,7 @@ export interface HonolusOptions {
     observability?: { logger?: Logger; metrics?: Metrics; tracer?: Tracer };
     jobQueue?: JobQueue;
     readiness?: Array<{ name: string; ready(): Promise<void> }>;
+    auth?: AuthOptions;
 }
 
 export class Honolus {
@@ -88,6 +100,17 @@ export class Honolus {
     private readonly database?: SonolusDatabase;
     private readonly jobQueue?: JobQueue;
     private readonly routeRegistry: RouteRegistry;
+    public readonly sessions?: SessionManager;
+    private readonly readinessDependencies: Array<{ name: string; ready(): Promise<void> }>;
+    private inflight = 0;
+    private closing = false;
+    private closePromise?: Promise<void>;
+
+    public static async create(options: HonolusOptions = {}): Promise<Honolus> {
+        const honolus = new Honolus(options);
+        await honolus.ready();
+        return honolus;
+    }
 
     constructor(options: HonolusOptions = {}) {
         validateOptions(options);
@@ -96,8 +119,16 @@ export class Honolus {
         this.app = new Hono();
         this.database = options.database;
         this.jobQueue = options.jobQueue;
+        this.readinessDependencies = options.readiness ?? [];
+        this.sessions = options.auth ? new SessionManager(options.auth) : undefined;
         this.app.onError((error, context) => respondError(context, error));
+        this.app.use('*', async (context, next) => {
+            if (this.closing) return context.json({ error: 'Server is shutting down', code: 'NOT_READY' }, 503);
+            this.inflight++;
+            try { await next(); } finally { this.inflight--; }
+        });
         this.app.use('*', request_id_middleware(), error_middleware());
+        if (this.sessions) this.app.use('*', session_middleware(this.sessions));
         if (options.observability) this.app.use('*', observability_middleware(options.observability));
         if (options.rateLimit) this.app.use('*', rate_limit_middleware(options.rateLimit));
         if (options.timeoutMs !== undefined) this.app.use('*', timeout_middleware(options.timeoutMs));
@@ -107,7 +138,7 @@ export class Honolus {
             try {
                 await this.database?.ready?.();
                 await this.jobQueue?.ready?.();
-                await Promise.all((options.readiness ?? []).map((dependency) => dependency.ready()));
+                await Promise.all(this.readinessDependencies.map((dependency) => dependency.ready()));
                 return context.json({ status: 'ok', requestId: context.get('requestId') });
             } catch {
                 return context.json({ status: 'not_ready', requestId: context.get('requestId') }, 503);
@@ -151,7 +182,23 @@ export class Honolus {
         return createOpenApiDocument(this.routeRegistry.getRoutes(), options);
     }
 
-    public async close(): Promise<void> {
+    public async ready(): Promise<void> {
+        await this.database?.ready?.();
+        await this.jobQueue?.ready?.();
+        await Promise.all(this.readinessDependencies.map((dependency) => dependency.ready()));
+    }
+
+    public async close(options: { gracePeriodMs?: number } = {}): Promise<void> {
+        if (this.closePromise) return this.closePromise;
+        this.closing = true;
+        this.closePromise = this.performClose(options.gracePeriodMs ?? 30_000);
+        return this.closePromise;
+    }
+
+    private async performClose(gracePeriodMs: number): Promise<void> {
+        if (!Number.isInteger(gracePeriodMs) || gracePeriodMs < 0) throw new RangeError('gracePeriodMs must be a non-negative integer');
+        const deadline = Date.now() + gracePeriodMs;
+        while (this.inflight > 0 && Date.now() < deadline) await new Promise((resolve) => setTimeout(resolve, 10));
         await this.jobQueue?.close();
         await this.database?.close();
     }
@@ -197,6 +244,8 @@ function normalizeBasePath(path: `/${string}`): string {
 }
 
 export { SonolusContext } from './context';
+export { createTestContext } from './testing';
+export type { TestContextOptions } from './testing';
 export { SonolusSearchRegistry } from './search';
 export type {
     RouteDecorator,
@@ -208,6 +257,8 @@ export type {
     RoutableItem,
     RoutableItemType,
 } from './api';
+export { defineHandler } from './api/registry';
+export type { FunctionHandlerOptions, HandlerDependencies } from './api/registry';
 export type {
     AnySearchValue,
     QuickSearchValue,

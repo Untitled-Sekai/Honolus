@@ -31,6 +31,8 @@ export default defineConfig({
                     { text: '検索とページング', link: '/features/search' },
                     { text: 'Packとアセット', link: '/features/pack' },
                     { text: '非同期ジョブ', link: '/features/jobs' },
+                    { text: '認証・認可', link: '/features/auth' },
+                    { text: 'Outbox', link: '/features/outbox' },
                 ] },
             ],
             '/operations/': [
@@ -38,6 +40,7 @@ export default defineConfig({
                     { text: 'Production構成', link: '/operations/production' },
                     { text: '観測性とヘルスチェック', link: '/operations/observability' },
                     { text: 'セキュリティ', link: '/operations/security' },
+                    { text: '負荷・障害試験', link: '/operations/load-testing' },
                 ] },
             ],
             '/reference/': [

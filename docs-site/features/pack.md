@@ -44,3 +44,7 @@ const sonolus = new Honolus({
 静的mountは完成済みレスポンスをそのまま配信します。動的検索や更新が必要ならDirectory PackをDBへimportしてください。
 
 asset endpointはhashをETagに使い、`immutable`な1年cache headerを返します。Productionでは同じURLをCDNへcacheさせる構成が適しています。
+
+## S3互換ストレージ
+
+`S3SonolusAssetStore`は大きなassetのmultipart upload、stagingからの原子的な公開、presigned upload、古いstaging objectのGCに対応します。公開前に内容のSHA-1とSonolus resource hashが一致することを検証します。
