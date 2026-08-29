@@ -1,11 +1,12 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
 const path = require('node:path');
+const { existsSync } = require('node:fs');
 const { Honolus, ScpArchive } = require('../dist');
 
 const scpPath = path.join(process.cwd(), 'docs/sample_assets/FreePack.scp');
 
-test('scp archive serves static API files and repository assets', async () => {
+test('scp archive serves static API files and repository assets', { skip: !existsSync(scpPath) && 'FreePack.scp fixture is not checked in' }, async () => {
     const archive = ScpArchive.fromFile(scpPath);
     assert.equal(archive.has('sonolus/skins/list'), true);
     assert.match(new TextDecoder().decode(archive.read('sonolus/skins/list')), /"pixel"/);
@@ -23,7 +24,7 @@ test('scp archive serves static API files and repository assets', async () => {
     assert.equal((await asset.arrayBuffer()).byteLength, 448);
 });
 
-test('scp static mount falls through for entries not in the archive', async () => {
+test('scp static mount falls through for entries not in the archive', { skip: !existsSync(scpPath) && 'FreePack.scp fixture is not checked in' }, async () => {
     const sonolus = new Honolus({ pack: { type: 'scp', path: scpPath } });
     assert.equal((await sonolus.getApp().request('/sonolus/not-in-pack')).status, 404);
 });

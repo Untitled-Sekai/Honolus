@@ -1,33 +1,48 @@
 {
   "name": "honolus",
   "version": "1.0.0",
-  "description": "",
+  "description": "A type-safe Sonolus server framework built on Hono",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "require": "./dist/index.js", "default": "./dist/index.js" },
+    "./package.json": "./package.json"
+  },
+  "files": ["dist", "README.md", "LICENSE"],
   "bin": {
     "honolus": "dist/cli.js"
   },
   "scripts": {
     "build": "tsc",
+    "postbuild": "node -e \"require('node:fs').chmodSync('dist/cli.js',0o755)\"",
+    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
     "typecheck": "tsc --noEmit",
     "test": "npm run build && node --test tests/*.test.js && tsc -p tsconfig.test.json",
+    "check": "npm run typecheck && npm test && npm run docs:build",
+    "prepack": "npm run clean && npm run build",
+    "prepublishOnly": "npm run check",
     "cli": "node dist/cli.js",
     "docs:dev": "vitepress dev docs-site",
     "docs:build": "vitepress build docs-site",
     "docs:preview": "vitepress preview docs-site"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": ["sonolus", "hono", "typescript", "server", "framework"],
+  "author": "Untitled Sekai",
   "license": "ISC",
+  "repository": { "type": "git", "url": "git+https://github.com/Untitled-Sekai/Honolus.git" },
+  "bugs": { "url": "https://github.com/Untitled-Sekai/Honolus/issues" },
+  "homepage": "https://github.com/Untitled-Sekai/Honolus#readme",
+  "engines": { "node": ">=20" },
+  "publishConfig": { "access": "public" },
+  "sideEffects": false,
   "type": "commonjs",
   "dependencies": {
-    "@hono/zod-validator": "^0.9.0",
     "@sonolus/core": "^7.15.3",
-    "@sonolus/free-pack": "^1.2.0",
     "hono": "^4.13.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@sonolus/free-pack": "^1.2.0",
     "@types/node": "^26.1.2",
     "typescript": "^7.0.2",
     "vitepress": "^1.6.4"
