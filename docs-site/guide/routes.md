@@ -4,7 +4,7 @@
 
 ```ts
 import type { ServerInfo } from '@sonolus/core'
-import type { SonolusContext } from 'honolus'
+import type { SonolusContext } from '@untitledsekai/honolus'
 import { sonolus } from '../app'
 
 @sonolus.route.server.info

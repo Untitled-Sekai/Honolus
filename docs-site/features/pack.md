@@ -6,7 +6,7 @@
 import {
     FileSonolusAssetStore,
     importSonolusPack,
-} from 'honolus'
+} from '@untitledsekai/honolus'
 
 const assets = new FileSonolusAssetStore('./data/repository')
 

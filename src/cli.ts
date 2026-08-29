@@ -19,8 +19,8 @@ async function main(argv: string[]): Promise<void> {
 async function generateProject(directory: string): Promise<void> {
     const root = resolve(directory);
     await mkdir(join(root, 'src'), { recursive: true });
-    await writeIfMissing(join(root, 'src/app.ts'), `import { Honolus } from 'honolus'\n\nexport const sonolus = new Honolus()\nexport default sonolus.getApp()\n`);
-    await writeIfMissing(join(root, 'package.json'), JSON.stringify({ type: 'module', scripts: { build: 'tsc', dev: 'tsx src/app.ts', routes: 'honolus routes --module ./dist/app.js' }, dependencies: { honolus: '^1.0.0', hono: '^4.13.0' }, devDependencies: { typescript: '^5.0.0', tsx: '^4.0.0' } }, null, 2) + '\n');
+    await writeIfMissing(join(root, 'src/app.ts'), `import { Honolus } from '@untitledsekai/honolus'\n\nexport const sonolus = new Honolus()\nexport default sonolus.getApp()\n`);
+    await writeIfMissing(join(root, 'package.json'), JSON.stringify({ type: 'module', scripts: { build: 'tsc', dev: 'tsx src/app.ts', routes: 'honolus routes --module ./dist/app.js' }, dependencies: { '@untitledsekai/honolus': '^1.0.0', hono: '^4.13.0' }, devDependencies: { typescript: '^5.0.0', tsx: '^4.0.0' } }, null, 2) + '\n');
     await writeIfMissing(join(root, 'tsconfig.json'), JSON.stringify({ compilerOptions: { target: 'ES2022', module: 'NodeNext', moduleResolution: 'NodeNext', strict: true, outDir: 'dist' }, include: ['src'] }, null, 2) + '\n');
     await writeIfMissing(join(root, 'docker-compose.yml'), `services:\n  postgres:\n    image: postgres:16\n    environment:\n      POSTGRES_PASSWORD: honolus\n      POSTGRES_DB: honolus\n    ports: ["5432:5432"]\n  redis:\n    image: redis:7\n    ports: ["6379:6379"]\n`);
     console.log(`Created Honolus project in ${root}`);
@@ -30,7 +30,7 @@ async function generateRoute(name: string, directory: string): Promise<void> {
     const safeName = name.replace(/[^A-Za-z0-9_-]/g, '-');
     const target = join(resolve(directory), 'src', 'routes', `${safeName}.ts`);
     await mkdir(dirname(target), { recursive: true });
-    await writeIfMissing(target, `import { Honolus, SonolusContext } from 'honolus'\n\nexport function register${toPascal(safeName)}(sonolus: Honolus) {\n    sonolus.route.server.info(class ${toPascal(safeName)}Handler {\n        async handle(_context: SonolusContext) {\n            return { sections: [] }\n        }\n    })\n}\n`);
+    await writeIfMissing(target, `import { Honolus, SonolusContext } from '@untitledsekai/honolus'\n\nexport function register${toPascal(safeName)}(sonolus: Honolus) {\n    sonolus.route.server.info(class ${toPascal(safeName)}Handler {\n        async handle(_context: SonolusContext) {\n            return { sections: [] }\n        }\n    })\n}\n`);
     console.log(`Created ${target}`);
 }
 

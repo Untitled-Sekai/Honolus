@@ -8,7 +8,7 @@
 
 ```ts
 import type { ServerAuthenticateResponse } from '@sonolus/core'
-import { Honolus, SonolusContext } from 'honolus'
+import { Honolus, SonolusContext } from '@untitledsekai/honolus'
 
 const sonolus = new Honolus()
 

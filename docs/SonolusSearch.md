@@ -7,7 +7,7 @@ Sonolusの検索フォームは、登録した `ServerForm` の `type` と各 `S
 検索フォームをアイテム種類ごとの関数へ渡します。戻り値は、その定義の型情報を保持した登録オブジェクトです。
 
 ```ts
-import type { SearchForms } from 'honolus'
+import type { SearchForms } from '@untitledsekai/honolus'
 
 const sonolus = new Honolus()
 

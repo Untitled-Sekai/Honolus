@@ -1,7 +1,7 @@
 # Honolus
 
-[![npm version](https://img.shields.io/npm/v/honolus.svg)](https://www.npmjs.com/package/honolus)
-[![license](https://img.shields.io/npm/l/honolus.svg)](https://github.com/Untitled-Sekai/Honolus/blob/main/LICENSE)
+[![npm version](https://img.shields.io/npm/v/@untitledsekai/honolus.svg)](https://www.npmjs.com/package/@untitledsekai/honolus)
+[![license](https://img.shields.io/npm/l/@untitledsekai/honolus.svg)](https://github.com/Untitled-Sekai/Honolus/blob/main/LICENSE)
 
 Honolus is a type-safe Sonolus server framework built on [Hono](https://hono.dev/). It provides typed routes, pluggable databases, search and cursor pagination, Pack import, asset delivery, durable jobs, authentication, and production observability.
 
@@ -13,13 +13,13 @@ Honolus is a type-safe Sonolus server framework built on [Hono](https://hono.dev
 ## Installation
 
 ```bash
-npm install honolus
+npm install @untitledsekai/honolus
 ```
 
 ## Quick start
 
 ```ts
-import { Honolus, createSonolusDatabase } from 'honolus'
+import { Honolus, createSonolusDatabase } from '@untitledsekai/honolus'
 
 export const database = createSonolusDatabase({ driver: 'memory' })
 
@@ -37,7 +37,7 @@ For production, use a shared PostgreSQL database and shared session/rate-limit s
 
 ```ts
 import { Pool } from 'pg'
-import { PostgresExecutor, createSonolusDatabase } from 'honolus'
+import { PostgresExecutor, createSonolusDatabase } from '@untitledsekai/honolus'
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL })
 const executor = new PostgresExecutor({ pool, statementTimeoutMs: 5_000 })

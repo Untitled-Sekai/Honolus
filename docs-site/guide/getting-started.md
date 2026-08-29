@@ -9,7 +9,7 @@
 ## インストール
 
 ```bash
-npm install honolus @sonolus/core
+npm install @untitledsekai/honolus @sonolus/core
 npm install -D typescript tsx @types/node
 ```
 
@@ -18,7 +18,7 @@ npm install -D typescript tsx @types/node
 `src/app.ts`を作成します。
 
 ```ts
-import { Honolus, createSonolusDatabase } from 'honolus'
+import { Honolus, createSonolusDatabase } from '@untitledsekai/honolus'
 
 export const database = createSonolusDatabase({ driver: 'memory' })
 

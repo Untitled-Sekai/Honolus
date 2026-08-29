@@ -1,6 +1,6 @@
 # Honolus CLI
 
-`npm install honolus` でインストールした場合、`honolus` コマンドを利用できます。
+`npm install @untitledsekai/honolus` でインストールした場合、`honolus` コマンドを利用できます。
 
 ```bash
 honolus generate project ./my-server

@@ -4,13 +4,14 @@ Packages are published from GitHub Releases through `.github/workflows/publish.y
 
 ## One-time npm setup
 
-1. Create or sign in to the npm account that will own `honolus`.
+1. Sign in to an npm account with publish access to the `untitledsekai` Organization.
 2. Enable two-factor authentication on the account.
-3. Create the `honolus` package with the first release, or configure its trusted publisher after the first ownership setup allowed by npm.
+3. Confirm that the Organization scope is `@untitledsekai` and the package name is `@untitledsekai/honolus`.
 4. In npm package settings, configure a GitHub Actions trusted publisher:
    - Organization or user: `Untitled-Sekai`
    - Repository: `Honolus`
    - Workflow: `publish.yml`
+   - npm package: `@untitledsekai/honolus`
 5. Restrict or revoke legacy automation tokens after trusted publishing works.
 
 ## Release checklist

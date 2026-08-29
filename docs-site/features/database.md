@@ -32,7 +32,7 @@ import { Pool } from 'pg'
 import {
     PostgresExecutor,
     createSonolusDatabase,
-} from 'honolus'
+} from '@untitledsekai/honolus'
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
