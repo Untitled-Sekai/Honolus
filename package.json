@@ -1,14 +1,22 @@
 {
   "name": "@untitledsekai/honolus",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A type-safe Sonolus server framework built on Hono",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
-    ".": { "types": "./dist/index.d.ts", "require": "./dist/index.js", "default": "./dist/index.js" },
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
     "./package.json": "./package.json"
   },
-  "files": ["dist", "README.md", "LICENSE"],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "bin": {
     "honolus": "dist/cli.js"
   },
@@ -26,14 +34,29 @@
     "docs:build": "vitepress build docs-site",
     "docs:preview": "vitepress preview docs-site"
   },
-  "keywords": ["sonolus", "hono", "typescript", "server", "framework"],
+  "keywords": [
+    "sonolus",
+    "hono",
+    "typescript",
+    "server",
+    "framework"
+  ],
   "author": "Untitled Sekai",
   "license": "ISC",
-  "repository": { "type": "git", "url": "git+https://github.com/Untitled-Sekai/Honolus.git" },
-  "bugs": { "url": "https://github.com/Untitled-Sekai/Honolus/issues" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Untitled-Sekai/Honolus.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Untitled-Sekai/Honolus/issues"
+  },
   "homepage": "https://github.com/Untitled-Sekai/Honolus#readme",
-  "engines": { "node": ">=20" },
-  "publishConfig": { "access": "public" },
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "sideEffects": false,
   "type": "commonjs",
   "dependencies": {

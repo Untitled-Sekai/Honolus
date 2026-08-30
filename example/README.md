@@ -34,6 +34,15 @@ Run the HTTP-level example test with:
 npm test
 ```
 
+OpenAPIを生成する場合は、先にビルドしてからCLIを実行します。
+
+```bash
+npm run build
+npm run openapi
+```
+
+`example/openapi.json`に登録済みのserver infoとPostルートが出力されます。
+
 ## Minimal file layout
 
 ```text

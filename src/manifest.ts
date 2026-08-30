@@ -23,5 +23,5 @@ export function createOpenApiDocument(routes: readonly RegisteredRoute[], option
         paths[path] ??= {};
         paths[path][route.method.toLowerCase()] = { responses: { '200': { description: 'Success' }, '400': { description: 'Bad request' }, '500': { description: 'Internal server error' } } };
     }
-    return { openapi: '3.0.3', info: { title: options.title ?? 'Honolus API', version: options.version ?? '1.0.0' }, paths };
+    return { openapi: '3.0.3', info: { title: options.title ?? 'Honolus API', version: options.version ?? '1.0.1' }, paths };
 }

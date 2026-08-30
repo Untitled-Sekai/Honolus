@@ -188,4 +188,19 @@ npm test
 
 [`test/posts.test.js`](https://github.com/Untitled-Sekai/Honolus/blob/main/example/test/posts.test.js)はinfo、list、detailをHono appへHTTP requestし、Post名、日本語タイトル、説明、404を確認します。
 
+## OpenAPIを生成する
+
+ExampleはCLI用scriptも定義しています。
+
+```bash
+npm run build
+npm run openapi
+```
+
+内部では次のコマンドを実行し、`example/openapi.json`へ登録済みルートを出力します。
+
+```bash
+honolus openapi --module ./dist/app.js --output openapi.json
+```
+
 本番化するときはMemory DBを[PostgreSQL](/features/database#postgresql)へ交換し、同じRepository呼び出しを維持できます。

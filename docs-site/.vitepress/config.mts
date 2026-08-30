@@ -15,6 +15,7 @@ export default defineConfig({
             { text: '機能', link: '/features/database' },
             { text: '運用', link: '/operations/production' },
             { text: 'API', link: '/reference/configuration' },
+            { text: '更新履歴', link: '/releases/' },
         ],
         sidebar: {
             '/guide/': [
@@ -49,6 +50,12 @@ export default defineConfig({
                     { text: 'HonolusOptions', link: '/reference/configuration' },
                     { text: 'CLI', link: '/reference/cli' },
                     { text: '公開API', link: '/reference/api' },
+                ] },
+            ],
+            '/releases/': [
+                { text: '更新履歴', items: [
+                    { text: 'すべてのリリース', link: '/releases/' },
+                    { text: 'v1.0.1', link: '/releases/1.0.1' },
                 ] },
             ],
         },

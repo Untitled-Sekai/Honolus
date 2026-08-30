@@ -7,6 +7,7 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "test": "npm run build && node --test test/*.test.js",
+    "openapi": "honolus openapi --module ./dist/app.js --output openapi.json",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit"
   },
