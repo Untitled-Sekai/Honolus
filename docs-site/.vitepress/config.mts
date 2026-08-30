@@ -21,6 +21,7 @@ export default defineConfig({
                 { text: 'はじめる', items: [
                     { text: 'Honolusとは', link: '/guide/' },
                     { text: 'クイックスタート', link: '/guide/getting-started' },
+                    { text: 'Exampleを動かす', link: '/guide/example' },
                     { text: 'プロジェクト構成', link: '/guide/project-structure' },
                     { text: 'ルートを作る', link: '/guide/routes' },
                 ] },

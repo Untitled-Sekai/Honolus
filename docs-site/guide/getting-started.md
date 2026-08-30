@@ -2,7 +2,7 @@
 
 ## 必要な環境
 
-- Node.js 22以上を推奨
+- Node.js 20以上
 - npmまたは互換パッケージマネージャー
 - TypeScript 5以降
 
@@ -47,3 +47,5 @@ curl http://localhost:3000/sonolus/info
 ::: warning 本番環境
 MemoryとJSONは複数プロセス間で状態を共有しません。本番の共有更新データにはPostgreSQLを使用してください。
 :::
+
+完全なNode.jsプロジェクトを先に試したい場合は、[Exampleを動かす](/guide/example)を参照してください。

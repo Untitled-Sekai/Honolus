@@ -9,6 +9,7 @@ const sonolus = new Honolus(options)
 | `basePath` | `'/sonolus'` | Sonolus APIのbase path |
 | `version` | `'1.1.3'` | `Sonolus-Version` header |
 | `database` | `SonolusDatabase` | item repositoryと自動route |
+| `databaseRoutes` | `true` | `false`なら独自decorator用にDB自動routeを無効化 |
 | `assets` | `SonolusAssetStore` | `/repository/:hash`の配信元 |
 | `pack` | scp / directory / npm | read-only static Pack |
 | `timeoutMs` | number | request deadline |

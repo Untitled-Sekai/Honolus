@@ -72,6 +72,16 @@ The full VitePress documentation is maintained in [`docs-site`](https://github.c
 - [Production deployment](https://github.com/Untitled-Sekai/Honolus/blob/main/docs-site/operations/production.md)
 - [Compatibility policy](https://github.com/Untitled-Sekai/Honolus/blob/main/docs/Compatibility.md)
 
+## Example
+
+A runnable Node.js project is available in [`example`](https://github.com/Untitled-Sekai/Honolus/tree/main/example).
+
+```bash
+cd example
+npm install
+npm run dev
+```
+
 ## Development
 
 ```bash

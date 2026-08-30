@@ -79,6 +79,8 @@ export interface HonolusOptions {
     version?: string;
     /** Mount a read-only .scp static pack as a fallback for Sonolus routes. */
     database?: SonolusDatabase;
+    /** Register built-in database-backed item routes. Disable when using custom decorators. */
+    databaseRoutes?: boolean;
     assets?: SonolusAssetStore;
     pack?:
         | { type: 'scp'; path: string; mode?: 'static' }
@@ -166,7 +168,7 @@ export class Honolus {
         }
         this.routeRegistry = new RouteRegistry(this.app, basePath);
         this.route = new SonolusRoutes(this.routeRegistry);
-        if (options.database) registerDatabaseRoutes(this.route, options.database);
+        if (options.database && options.databaseRoutes !== false) registerDatabaseRoutes(this.route, options.database);
         if (options.assets) registerAssetRoute(this.app, basePath, options.assets);
     }
 
